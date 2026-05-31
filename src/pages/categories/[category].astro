@@ -1,0 +1,27 @@
+---
+import { getCollection } from "astro:content";
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import PostCard from "@/components/PostCard.astro";
+import { filterPublished, sortPosts, uniqueValues } from "@/utils/posts";
+
+export async function getStaticPaths() {
+  const posts = filterPublished(await getCollection("blog"));
+  const categories = uniqueValues(posts.map((post) => post.data.category));
+  return categories.map((category) => ({
+    params: { category },
+    props: { category, posts: sortPosts(posts.filter((post) => post.data.category === category)) }
+  }));
+}
+
+const { category, posts } = Astro.props;
+---
+
+<BaseLayout title={`分类：${category} | Longwu.dev`} description={`浏览分类 ${category} 下的技术文章。`}>
+  <section class="content-grid py-12">
+    <h1 class="text-4xl font-black text-slate-950 dark:text-white">{category}</h1>
+    <p class="mt-4 text-slate-600 dark:text-slate-300">共 {posts.length} 篇文章</p>
+    <div class="mt-8 grid gap-5">
+      {posts.map((post) => <PostCard post={post} />)}
+    </div>
+  </section>
+</BaseLayout>

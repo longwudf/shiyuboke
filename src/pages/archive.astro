@@ -1,0 +1,61 @@
+---
+import { getCollection } from "astro:content";
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import { filterPublished, formatDate, sortPosts } from "@/utils/posts";
+import { withBase } from "@/utils/url";
+
+const posts = sortPosts(filterPublished(await getCollection("blog")));
+const groups = posts.reduce<Record<string, typeof posts>>((acc, post) => {
+  const year = String(post.data.date.getFullYear());
+  acc[year] = acc[year] ?? [];
+  acc[year].push(post);
+  return acc;
+}, {});
+
+const years = Object.keys(groups).sort((a, b) => Number(b) - Number(a));
+---
+
+<BaseLayout title="归档 | Longwu.dev" description="按年份归档浏览全部技术文章。">
+  <section class="content-grid py-12">
+    <div class="mx-auto max-w-4xl">
+      <div class="mb-10">
+        <h1 class="text-4xl font-black text-slate-950 dark:text-white">文章归档</h1>
+        <p class="mt-4 text-lg leading-8 text-slate-600 dark:text-slate-300">按发布时间聚合全部已发布文章，适合快速回看写作脉络。</p>
+      </div>
+
+      <div class="space-y-10">
+        {years.map((year) => (
+          <section>
+            <div class="mb-4 flex items-baseline gap-3">
+              <h2 class="text-2xl font-black text-slate-950 dark:text-white">{year}</h2>
+              <span class="text-sm text-slate-500 dark:text-slate-400">{groups[year].length} 篇</span>
+            </div>
+            <div class="surface overflow-hidden rounded-lg">
+              <ol class="divide-y divide-slate-200 dark:divide-slate-800">
+                {groups[year].map((post) => (
+                  <li>
+                    <a class="grid gap-2 p-5 transition hover:bg-teal-50/70 sm:grid-cols-[150px_1fr] dark:hover:bg-teal-950/20" href={withBase(`/blog/${post.slug}`)}>
+                      <time class="text-sm font-medium text-slate-500 dark:text-slate-400" datetime={post.data.date.toISOString()}>
+                        {formatDate(post.data.date)}
+                      </time>
+                      <div>
+                        <h3 class="font-bold text-slate-950 dark:text-white">{post.data.title}</h3>
+                        <p class="mt-1 text-sm leading-6 text-slate-600 dark:text-slate-300">{post.data.description}</p>
+                        <div class="mt-3 flex flex-wrap gap-2">
+                          <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700 dark:bg-slate-800 dark:text-slate-200">{post.data.category}</span>
+                          {post.data.tags.map((tag) => (
+                            <span class="rounded-full border border-teal-200 px-3 py-1 text-xs font-semibold text-teal-700 dark:border-teal-800 dark:text-teal-200">#{tag}</span>
+                          ))}
+                        </div>
+                      </div>
+                    </a>
+                  </li>
+                ))}
+              </ol>
+            </div>
+          </section>
+        ))}
+      </div>
+    </div>
+  </section>
+</BaseLayout>

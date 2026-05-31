@@ -1,0 +1,21 @@
+---
+import { withBase } from "@/utils/url";
+
+interface Props {
+  tags: string[];
+}
+
+const { tags } = Astro.props;
+---
+
+{
+  tags.length > 0 && (
+    <ul class="flex flex-wrap gap-2" aria-label="标签">
+      {tags.map((tag) => (
+        <li>
+          <a class="tag-pill" href={withBase(`/tags/${encodeURIComponent(tag)}`)}>#{tag}</a>
+        </li>
+      ))}
+    </ul>
+  )
+}

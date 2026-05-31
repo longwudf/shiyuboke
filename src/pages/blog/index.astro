@@ -1,0 +1,46 @@
+---
+import { getCollection } from "astro:content";
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import PostCard from "@/components/PostCard.astro";
+import { filterPublished, sortPosts, uniqueValues } from "@/utils/posts";
+import { withBase } from "@/utils/url";
+
+const posts = sortPosts(filterPublished(await getCollection("blog")));
+const tags = uniqueValues(posts.flatMap((post) => post.data.tags));
+const categories = uniqueValues(posts.map((post) => post.data.category));
+---
+
+<BaseLayout title="文章 | Longwu.dev" description="按时间倒序浏览全部技术文章。">
+  <section class="content-grid py-12">
+    <div class="mb-10 max-w-2xl">
+      <h1 class="text-4xl font-black text-slate-950 dark:text-white">文章</h1>
+      <p class="mt-4 text-lg leading-8 text-slate-600 dark:text-slate-300">所有已发布内容按日期倒序排列，草稿会在构建时自动过滤。</p>
+    </div>
+    <div class="grid gap-8 lg:grid-cols-[minmax(0,1fr)_260px]">
+      <div class="grid gap-5">
+        {posts.map((post) => <PostCard post={post} />)}
+      </div>
+      <aside class="space-y-6">
+        <div class="surface rounded-lg p-5">
+          <h2 class="font-bold text-slate-950 dark:text-white">发现内容</h2>
+          <div class="mt-4 grid gap-3">
+            <a class="rounded-lg border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700 transition hover:border-teal-400 hover:text-teal-700 dark:border-slate-800 dark:text-slate-200 dark:hover:border-teal-500 dark:hover:text-teal-200" href={withBase("/search")}>搜索文章</a>
+            <a class="rounded-lg border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700 transition hover:border-teal-400 hover:text-teal-700 dark:border-slate-800 dark:text-slate-200 dark:hover:border-teal-500 dark:hover:text-teal-200" href={withBase("/archive")}>查看归档</a>
+          </div>
+        </div>
+        <div class="surface rounded-lg p-5">
+          <h2 class="font-bold text-slate-950 dark:text-white">分类</h2>
+          <div class="mt-4 flex flex-wrap gap-2">
+            {categories.map((category) => <a class="tag-pill" href={withBase(`/categories/${encodeURIComponent(category)}`)}>{category}</a>)}
+          </div>
+        </div>
+        <div class="surface rounded-lg p-5">
+          <h2 class="font-bold text-slate-950 dark:text-white">标签</h2>
+          <div class="mt-4 flex flex-wrap gap-2">
+            {tags.map((tag) => <a class="tag-pill" href={withBase(`/tags/${encodeURIComponent(tag)}`)}>#{tag}</a>)}
+          </div>
+        </div>
+      </aside>
+    </div>
+  </section>
+</BaseLayout>

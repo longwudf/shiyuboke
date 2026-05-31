@@ -1,0 +1,80 @@
+---
+import TagList from "@/components/TagList.astro";
+import TableOfContents from "@/components/TableOfContents.astro";
+import PostCard from "@/components/PostCard.astro";
+import BaseLayout from "./BaseLayout.astro";
+import type { BlogPost } from "@/utils/posts";
+import { formatDate, getReadingTime } from "@/utils/posts";
+import { withBase } from "@/utils/url";
+
+interface Props {
+  post: BlogPost;
+  headings: { depth: number; slug: string; text: string }[];
+  previous?: BlogPost;
+  next?: BlogPost;
+  relatedPosts?: BlogPost[];
+}
+
+const { post, headings, previous, next, relatedPosts = [] } = Astro.props;
+---
+
+<BaseLayout title={`${post.data.title} | Longwu.dev`} description={post.data.description}>
+  <article class="content-grid py-10 sm:py-12">
+    <div class="grid gap-10 lg:grid-cols-[minmax(0,1fr)_260px] lg:items-start">
+      <div class="mx-auto w-full max-w-[740px]">
+        <a class="mb-8 inline-flex text-sm font-medium text-teal-700 hover:text-teal-900 dark:text-teal-300 dark:hover:text-teal-100" href={withBase("/blog")}>
+          返回文章列表
+        </a>
+        <header class="mb-10 border-b border-slate-200 pb-8 dark:border-slate-800">
+          <div class="mb-4 flex flex-wrap items-center gap-3 text-sm text-slate-500 dark:text-slate-400">
+            <a class="tag-pill" href={withBase(`/categories/${encodeURIComponent(post.data.category)}`)}>{post.data.category}</a>
+            <span>发布于 {formatDate(post.data.date)}</span>
+            {post.data.updatedDate && <span>更新于 {formatDate(post.data.updatedDate)}</span>}
+            <span>{getReadingTime(post.body)}</span>
+          </div>
+          <h1 class="text-4xl font-black leading-tight text-slate-950 sm:text-5xl dark:text-white">{post.data.title}</h1>
+          <p class="mt-5 text-lg leading-8 text-slate-600 dark:text-slate-300">{post.data.description}</p>
+          <div class="mt-6">
+            <TagList tags={post.data.tags} />
+          </div>
+        </header>
+        <div class="mb-8 lg:hidden">
+          <TableOfContents headings={headings} compact />
+        </div>
+        <div class="prose-blog">
+          <slot />
+        </div>
+        <nav class="mt-14 grid gap-4 border-t border-slate-200 pt-8 sm:grid-cols-2 dark:border-slate-800" aria-label="上一篇和下一篇">
+          {previous ? (
+            <a class="surface rounded-lg p-5 transition hover:-translate-y-0.5 hover:border-teal-300" href={withBase(`/blog/${previous.slug}`)}>
+              <span class="text-sm text-slate-500 dark:text-slate-400">上一篇</span>
+              <strong class="mt-1 block text-slate-950 dark:text-white">{previous.data.title}</strong>
+              <span class="mt-2 block text-sm text-slate-500 dark:text-slate-400">{formatDate(previous.data.date)}</span>
+            </a>
+          ) : <span />}
+          {next && (
+            <a class="surface rounded-lg p-5 text-right transition hover:-translate-y-0.5 hover:border-teal-300" href={withBase(`/blog/${next.slug}`)}>
+              <span class="text-sm text-slate-500 dark:text-slate-400">下一篇</span>
+              <strong class="mt-1 block text-slate-950 dark:text-white">{next.data.title}</strong>
+              <span class="mt-2 block text-sm text-slate-500 dark:text-slate-400">{formatDate(next.data.date)}</span>
+            </a>
+          )}
+        </nav>
+        {relatedPosts.length > 0 && (
+          <section class="mt-14 border-t border-slate-200 pt-8 dark:border-slate-800">
+            <div class="mb-5">
+              <p class="text-sm font-semibold text-teal-700 dark:text-teal-300">Related</p>
+              <h2 class="mt-1 text-2xl font-black text-slate-950 dark:text-white">相关文章推荐</h2>
+            </div>
+            <div class="grid gap-4">
+              {relatedPosts.map((relatedPost) => <PostCard post={relatedPost} />)}
+            </div>
+          </section>
+        )}
+      </div>
+      <div class="hidden lg:block">
+        <TableOfContents headings={headings} />
+      </div>
+    </div>
+  </article>
+</BaseLayout>

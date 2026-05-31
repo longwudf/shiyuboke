@@ -1,0 +1,45 @@
+---
+title: "TypeScript 前端工程化实践"
+description: "从类型边界、脚本命令和构建检查三个角度，整理 TypeScript 项目的工程化习惯。"
+date: 2026-05-16
+updatedDate: 2026-05-22
+tags: ["TypeScript", "工程化", "前端"]
+category: "TypeScript"
+cover: "/images/typescript-engineering.svg"
+draft: false
+featured: true
+---
+
+export const Checklist = ({ items }) => (
+  <ul>
+    {items.map((item) => <li><strong>{item}</strong></li>)}
+  </ul>
+);
+
+## 类型边界先行
+
+TypeScript 的价值不只是给变量加类型，更重要的是让数据边界可见。前端项目常见的边界包括路由参数、配置文件、内容元数据、组件 props 和外部接口返回值。
+
+在静态博客里，文章 frontmatter 就是一个典型边界。用内容集合定义 schema 后，标题、日期、标签和草稿状态都会在构建时被验证。
+
+## 脚本命令要少而明确
+
+一个小项目不需要复杂命令，但至少应该有明确的开发、检查、构建和预览入口。
+
+<Checklist items={["dev：本地开发", "check：类型和 Astro 检查", "build：生成静态产物", "preview：预览构建结果"]} />
+
+这些命令是团队协作和 CI 部署的共同语言。它们越稳定，项目迁移和排障就越轻松。
+
+## 构建检查进 CI
+
+本地能运行不代表部署能成功。把 `astro check` 和 `astro build` 放进 GitHub Actions，可以在 push 后自动发现类型错误、内容 schema 错误和静态路由生成问题。
+
+```json
+{
+  "scripts": {
+    "build": "astro check && astro build"
+  }
+}
+```
+
+工程化的目标不是制造仪式感，而是让错误尽早出现，并且出现在最容易修复的位置。

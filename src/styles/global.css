@@ -1,0 +1,127 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+:root.dark {
+  color-scheme: dark;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  @apply min-h-screen bg-paper text-ink antialiased transition-colors dark:bg-slate-950 dark:text-slate-100;
+}
+
+::selection {
+  @apply bg-teal-200 text-slate-950;
+}
+
+.content-grid {
+  @apply mx-auto w-full max-w-6xl px-5 sm:px-6 lg:px-8;
+}
+
+.surface {
+  @apply border border-slate-200/80 bg-white/[0.78] shadow-soft backdrop-blur dark:border-slate-800 dark:bg-slate-900/[0.72];
+}
+
+.tag-pill {
+  @apply inline-flex items-center rounded-full border border-teal-200 bg-teal-50 px-3 py-1 text-sm font-medium text-teal-800 transition hover:border-teal-400 hover:bg-teal-100 dark:border-teal-800 dark:bg-teal-950/70 dark:text-teal-200 dark:hover:border-teal-500;
+}
+
+.prose-blog {
+  @apply text-[1.04rem] leading-8 text-slate-700 dark:text-slate-300;
+}
+
+.prose-blog :where(h1, h2, h3, h4) {
+  @apply font-bold tracking-normal text-slate-950 dark:text-white;
+}
+
+.prose-blog :where(h2) {
+  @apply mt-14 scroll-mt-24 border-t border-slate-200 pt-10 text-3xl leading-tight dark:border-slate-800;
+}
+
+.prose-blog :where(h3) {
+  @apply mt-10 scroll-mt-24 text-2xl leading-tight;
+}
+
+.prose-blog :where(h4) {
+  @apply mt-8 scroll-mt-24 text-xl leading-tight;
+}
+
+.prose-blog :where(p) {
+  @apply my-6;
+}
+
+.prose-blog :where(a) {
+  @apply font-medium text-accent underline decoration-teal-300 decoration-2 underline-offset-4 hover:text-teal-600 dark:text-teal-300 dark:hover:text-teal-200;
+}
+
+.prose-blog :where(ul, ol) {
+  @apply my-6 pl-7;
+}
+
+.prose-blog :where(ul) {
+  @apply list-disc;
+}
+
+.prose-blog :where(ol) {
+  @apply list-decimal;
+}
+
+.prose-blog :where(li) {
+  @apply my-2 pl-1.5;
+}
+
+.prose-blog :where(li)::marker {
+  @apply font-semibold text-teal-700 dark:text-teal-300;
+}
+
+.prose-blog :where(blockquote) {
+  @apply my-8 rounded-r-lg border-l-4 border-coral bg-orange-50 px-5 py-4 text-slate-700 dark:bg-slate-900 dark:text-slate-300;
+}
+
+.prose-blog :where(blockquote p) {
+  @apply my-2;
+}
+
+.prose-blog :where(code):not(pre code) {
+  @apply rounded border border-slate-200 bg-slate-100 px-1.5 py-0.5 font-mono text-[0.9em] text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100;
+}
+
+.prose-blog :where(pre) {
+  @apply my-8 overflow-x-auto rounded-lg border border-slate-800 bg-slate-950 p-5 text-sm leading-6 shadow-soft;
+}
+
+.prose-blog :where(pre code) {
+  @apply bg-transparent p-0 font-mono text-slate-100;
+}
+
+.prose-blog :where(img) {
+  @apply my-8 rounded-lg border border-slate-200 dark:border-slate-800;
+}
+
+.prose-blog :where(hr) {
+  @apply my-10 border-slate-200 dark:border-slate-800;
+}
+
+.prose-blog :where(table) {
+  @apply my-8 w-full border-collapse overflow-hidden rounded-lg text-left text-sm;
+}
+
+.prose-blog :where(th) {
+  @apply border border-slate-200 bg-slate-100 px-4 py-3 font-semibold text-slate-950 dark:border-slate-800 dark:bg-slate-900 dark:text-white;
+}
+
+.prose-blog :where(td) {
+  @apply border border-slate-200 px-4 py-3 align-top dark:border-slate-800;
+}
+
+.prose-blog :where(tbody tr:nth-child(even)) {
+  @apply bg-white/60 dark:bg-slate-900/40;
+}

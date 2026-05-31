@@ -1,0 +1,42 @@
+---
+import { getCollection, render } from "astro:content";
+import BlogLayout from "@/layouts/BlogLayout.astro";
+import { filterPublished, sortPosts } from "@/utils/posts";
+
+export async function getStaticPaths() {
+  const posts = sortPosts(filterPublished(await getCollection("blog")));
+
+  return posts.map((post, index) => ({
+    params: { slug: post.slug },
+    props: {
+      post,
+      previous: posts[index + 1],
+      next: posts[index - 1],
+      relatedPosts: [
+        ...posts
+        .filter((candidate) => candidate.slug !== post.slug)
+        .map((candidate) => {
+          const sharedTags = candidate.data.tags.filter((tag) => post.data.tags.includes(tag)).length;
+          const sameCategory = candidate.data.category === post.data.category ? 2 : 0;
+          return { post: candidate, score: sharedTags + sameCategory };
+        })
+        .filter((item) => item.score > 0)
+        .sort((a, b) => b.score - a.score || b.post.data.date.valueOf() - a.post.data.date.valueOf())
+        .map((item) => item.post),
+        ...posts.filter((candidate) => candidate.slug !== post.slug)
+      ]
+        .filter((candidate, candidateIndex, candidates) =>
+          candidates.findIndex((item) => item.slug === candidate.slug) === candidateIndex
+        )
+        .slice(0, 3)
+    }
+  }));
+}
+
+const { post, previous, next, relatedPosts } = Astro.props;
+const { Content, headings } = await render(post);
+---
+
+<BlogLayout post={post} headings={headings} previous={previous} next={next} relatedPosts={relatedPosts}>
+  <Content />
+</BlogLayout>

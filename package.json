@@ -1,0 +1,41 @@
+{
+  "name": "boke",
+  "type": "module",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "astro dev",
+    "start": "astro dev",
+    "prebuild": "npm run check:posts",
+    "build": "astro check && astro build",
+    "preview": "astro preview",
+    "check": "astro check",
+    "manager": "tsx tools/article-manager/server.ts",
+    "new:post": "tsx scripts/new-post.ts",
+    "check:posts": "tsx scripts/check-posts.ts"
+  },
+  "dependencies": {
+    "@astrojs/check": "^0.9.4",
+    "@astrojs/mdx": "^4.0.8",
+    "@astrojs/rss": "^4.0.11",
+    "@astrojs/sitemap": "^3.2.1",
+    "@astrojs/tailwind": "^5.1.4",
+    "@vitejs/plugin-react": "^4.3.4",
+    "astro": "^5.1.5",
+    "express": "^4.21.2",
+    "gray-matter": "^4.0.3",
+    "multer": "^2.0.2",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "tailwindcss": "^3.4.17",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.0",
+    "@types/multer": "^1.4.12",
+    "@types/node": "^22.10.2",
+    "@types/react": "^19.0.2",
+    "@types/react-dom": "^19.0.2"
+  }
+}

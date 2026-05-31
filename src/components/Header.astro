@@ -1,0 +1,29 @@
+---
+import ThemeToggle from "./ThemeToggle.astro";
+import { withBase } from "@/utils/url";
+
+const navItems = [
+  { href: "/", label: "首页" },
+  { href: "/blog", label: "文章" },
+  { href: "/search", label: "搜索" },
+  { href: "/archive", label: "归档" },
+  { href: "/projects", label: "项目" },
+  { href: "/about", label: "关于" }
+];
+---
+
+<header class="sticky top-0 z-40 border-b border-slate-200/80 bg-paper/86 backdrop-blur dark:border-slate-800 dark:bg-slate-950/86">
+  <div class="content-grid flex h-16 items-center justify-between gap-4">
+    <a href={withBase("/")} class="text-base font-bold tracking-normal text-slate-950 dark:text-white" aria-label="返回首页">
+      Longwu.dev
+    </a>
+    <nav class="flex items-center gap-1 text-sm font-medium text-slate-600 dark:text-slate-300" aria-label="主导航">
+      {navItems.map((item) => (
+        <a class="rounded-full px-3 py-2 transition hover:bg-white hover:text-teal-700 dark:hover:bg-slate-900 dark:hover:text-teal-200" href={withBase(item.href)}>
+          {item.label}
+        </a>
+      ))}
+      <ThemeToggle />
+    </nav>
+  </div>
+</header>
