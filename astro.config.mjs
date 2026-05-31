@@ -3,7 +3,7 @@ import mdx from "@astrojs/mdx";
 import sitemap from "@astrojs/sitemap";
 import tailwind from "@astrojs/tailwind";
 
-const repoName = "boke";
+const repoName = "shiyuboke";
 const isUserSite = repoName === "longwudf.github.io";
 
 export default defineConfig({
