@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 520" role="img" aria-labelledby="title desc">
+  <title id="title">AI agent boundary</title>
+  <desc id="desc">Context contract between user intent, retrieval, tools, model, and audit logs.</desc>
+  <rect width="1100" height="520" rx="24" fill="#f8fafc"/>
+  <rect x="54" y="54" width="992" height="412" rx="22" fill="#f5f3ff" stroke="#7c3aed"/>
+  <g font-family="Arial, sans-serif" font-size="22" font-weight="700">
+    <rect x="110" y="110" width="210" height="90" rx="18" fill="#4338ca"/>
+    <text x="156" y="164" fill="#fff">User intent</text>
+    <rect x="445" y="110" width="210" height="90" rx="18" fill="#0f766e"/>
+    <text x="493" y="164" fill="#fff">Retrieval</text>
+    <rect x="780" y="110" width="210" height="90" rx="18" fill="#be123c"/>
+    <text x="828" y="164" fill="#fff">Tools</text>
+    <rect x="282" y="308" width="210" height="90" rx="18" fill="#1e40af"/>
+    <text x="331" y="362" fill="#fff">Model</text>
+    <rect x="608" y="308" width="210" height="90" rx="18" fill="#92400e"/>
+    <text x="650" y="362" fill="#fff">Audit log</text>
+  </g>
+  <g stroke="#334155" stroke-width="5" stroke-linecap="round" fill="none">
+    <path d="M320 155h120"/>
+    <path d="M655 155h120"/>
+    <path d="M550 200v94"/>
+    <path d="M492 353h110"/>
+  </g>
+  <text x="136" y="452" fill="#334155" font-family="Arial, sans-serif" font-size="20">把上下文当作工程接口：输入、来源、工具权限、评测和审计都要可追踪。</text>
+</svg>

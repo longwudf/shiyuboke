@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://longwudf.github.io/shiyuboke/sitemap-index.xml

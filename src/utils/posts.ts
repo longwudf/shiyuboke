@@ -6,19 +6,39 @@ export const sortPosts = (posts: BlogPost[]) =>
   posts.sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
 
 export const filterPublished = (posts: BlogPost[]) =>
-  posts.filter((post) => !post.data.draft);
+  posts.filter((post) => import.meta.env.DEV || !post.data.draft);
 
-export const getReadingTime = (body = "") => {
-  const words = body
+const numberFormatter = new Intl.NumberFormat("zh-CN");
+
+export const getReadingStats = (body = "") => {
+  const codeBlocks = body.match(/```[\s\S]*?```/g)?.length ?? 0;
+  const text = body
     .replace(/```[\s\S]*?```/g, "")
+    .replace(/<script[\s\S]*?<\/script>/gi, "")
+    .replace(/<style[\s\S]*?<\/style>/gi, "")
+    .replace(/^\s*(import|export)\s.+$/gm, "")
     .replace(/<[^>]+>/g, "")
-    .trim()
-    .split(/\s+/u)
-    .filter(Boolean).length;
-  const cjkChars = (body.match(/[\u4e00-\u9fff]/gu) ?? []).length;
-  const minutes = Math.max(1, Math.ceil(Math.max(words, cjkChars / 350)));
-  return `${minutes} 分钟阅读`;
+    .replace(/[#>*_`[\]{}()|~-]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  const cjkChars = (text.match(/[\u3400-\u9fff]/gu) ?? []).length;
+  const latinWords = (text.match(/[A-Za-z0-9]+(?:[-'][A-Za-z0-9]+)*/g) ?? []).length;
+  const words = cjkChars + latinWords;
+  const minutes = Math.max(1, Math.ceil(cjkChars / 350 + latinWords / 220 + codeBlocks * 0.35));
+  const label = `约 ${minutes} 分钟 · ${numberFormatter.format(words)} 字`;
+
+  return {
+    minutes,
+    words,
+    cjkChars,
+    latinWords,
+    codeBlocks,
+    label,
+    detail: codeBlocks > 0 ? `${label} · ${codeBlocks} 段代码` : label
+  };
 };
+
+export const getReadingTime = (body = "") => getReadingStats(body).label;
 
 export const formatDate = (date: Date) =>
   new Intl.DateTimeFormat("zh-CN", {

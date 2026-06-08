@@ -1,34 +1,27 @@
 ---
 import BaseLayout from "@/layouts/BaseLayout.astro";
-
-const projects = [
-  {
-    name: "Astro Blog Starter",
-    description: "当前博客本身就是一个可部署到 GitHub Pages 的静态站点模板。",
-    stack: ["Astro", "TypeScript", "Tailwind"]
-  },
-  {
-    name: "Frontend Tooling Notes",
-    description: "记录 TypeScript、Lint、构建和发布流程的工程化清单。",
-    stack: ["TypeScript", "DX", "CI"]
-  }
-];
+import { projects } from "@/data/projects";
+import { brand } from "@/data/site";
+import { withBase } from "@/utils/url";
 ---
 
-<BaseLayout title="项目 | Longwu.dev" description="前端项目、工程模板和技术实验展示。">
+<BaseLayout title={`专题 | ${brand.name}`} description="安全、浏览器、SRE 和 AI 工程专题入口。">
   <section class="content-grid py-12">
     <div class="mb-10 max-w-2xl">
-      <h1 class="text-4xl font-black text-slate-950 dark:text-white">项目</h1>
-      <p class="mt-4 text-lg leading-8 text-slate-600 dark:text-slate-300">展示一些可复用的前端项目、组件实验和工程模板。</p>
+      <h1 class="text-4xl font-black text-slate-950 dark:text-white">专题</h1>
+      <p class="mt-4 text-lg leading-8 text-slate-600 dark:text-slate-300">把文章按长期关注的技术主线组织起来，方便从单篇笔记回到完整脉络。</p>
     </div>
     <div class="grid gap-5 md:grid-cols-2">
       {projects.map((project) => (
         <article class="surface rounded-lg p-6">
           <h2 class="text-xl font-bold text-slate-950 dark:text-white">{project.name}</h2>
-          <p class="mt-3 text-slate-600 dark:text-slate-300">{project.description}</p>
+          <p class="mt-3 text-slate-600 dark:text-slate-300">{project.summary}</p>
           <div class="mt-5 flex flex-wrap gap-2">
             {project.stack.map((item) => <span class="tag-pill">{item}</span>)}
           </div>
+          <a class="mt-6 inline-flex text-sm font-semibold text-teal-700 hover:text-teal-900 dark:text-teal-300 dark:hover:text-teal-100" href={withBase(`/projects/${project.slug}`)}>
+            查看详情
+          </a>
         </article>
       ))}
     </div>

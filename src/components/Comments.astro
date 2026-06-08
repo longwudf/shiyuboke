@@ -1,0 +1,46 @@
+---
+import { MessageCircle } from "@lucide/astro";
+
+const repo = import.meta.env.PUBLIC_GISCUS_REPO || "longwudf/shiyuboke";
+const repoId = import.meta.env.PUBLIC_GISCUS_REPO_ID || "R_kgDOShwURA";
+const category = import.meta.env.PUBLIC_GISCUS_CATEGORY || "Announcements";
+const categoryId = import.meta.env.PUBLIC_GISCUS_CATEGORY_ID || "DIC_kwDOShwURM4C-xk0";
+const enabled = Boolean(repo && repoId && category && categoryId);
+---
+
+<section class="mt-14 border-t border-slate-200 pt-8 dark:border-slate-800" aria-labelledby="comments-title">
+  <div class="mb-5 flex items-start gap-3">
+    <span class="mt-1 inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-teal-50 text-teal-700 dark:bg-teal-950/60 dark:text-teal-200">
+      <MessageCircle size={20} aria-hidden="true" />
+    </span>
+    <div>
+      <p class="text-sm font-semibold text-teal-700 dark:text-teal-300">Comments</p>
+      <h2 id="comments-title" class="mt-1 text-2xl font-black text-slate-950 dark:text-white">讨论</h2>
+    </div>
+  </div>
+  {enabled ? (
+    <script
+      is:inline
+      src="https://giscus.app/client.js"
+      data-repo={repo}
+      data-repo-id={repoId}
+      data-category={category}
+      data-category-id={categoryId}
+      data-mapping="pathname"
+      data-strict="0"
+      data-reactions-enabled="1"
+      data-emit-metadata="0"
+      data-input-position="top"
+      data-theme="preferred_color_scheme"
+      data-lang="zh-CN"
+      crossorigin="anonymous"
+      async
+    ></script>
+  ) : (
+    <div class="surface rounded-lg p-5 text-sm leading-6 text-slate-600 dark:text-slate-300">
+      评论区已接入 Giscus 配置位。当前仓库需要先在 GitHub 后台开启 Discussions、安装 giscus app，并填写
+      <code class="mx-1 rounded bg-slate-100 px-1.5 py-0.5 dark:bg-slate-800">PUBLIC_GISCUS_CATEGORY_ID</code>
+      后才会显示评论。
+    </div>
+  )}
+</section>

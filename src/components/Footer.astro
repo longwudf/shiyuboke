@@ -1,13 +1,15 @@
 ---
+import { brand, footerLinks } from "@/data/site";
 import { withBase } from "@/utils/url";
 ---
 
 <footer class="mt-20 border-t border-slate-200 py-10 dark:border-slate-800">
   <div class="content-grid flex flex-col gap-4 text-sm text-slate-500 sm:flex-row sm:items-center sm:justify-between dark:text-slate-400">
-    <p>© {new Date().getFullYear()} Longwu.dev. Built with Astro.</p>
+    <p>© {new Date().getFullYear()} {brand.name}. Built with Astro.</p>
     <div class="flex gap-4">
-      <a class="hover:text-teal-700 dark:hover:text-teal-200" href={withBase("/rss.xml")}>RSS</a>
-      <a class="hover:text-teal-700 dark:hover:text-teal-200" href={withBase("/sitemap-index.xml")}>Sitemap</a>
+      {footerLinks.map((link) => (
+        <a class="hover:text-teal-700 dark:hover:text-teal-200" href={withBase(link.href)}>{link.label}</a>
+      ))}
     </div>
   </div>
 </footer>

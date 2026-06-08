@@ -1,5 +1,5 @@
 import { getCollection } from "astro:content";
-import { filterPublished, formatDate, getReadingTime, sortPosts } from "@/utils/posts";
+import { filterPublished, formatDate, getReadingStats, sortPosts } from "@/utils/posts";
 import { withBase } from "@/utils/url";
 
 const normalizeText = (value: string) =>
@@ -15,6 +15,11 @@ export async function GET() {
   const posts = sortPosts(filterPublished(await getCollection("blog")));
 
   const items = posts.map((post) => {
+    const titleText = normalizeText(post.data.title);
+    const descriptionText = normalizeText(post.data.description);
+    const categoryText = normalizeText(post.data.category);
+    const tagText = normalizeText(post.data.tags.join(" "));
+    const bodyText = normalizeText(post.body);
     const searchable = normalizeText(
       [
         post.data.title,
@@ -31,9 +36,16 @@ export async function GET() {
       category: post.data.category,
       tags: post.data.tags,
       date: formatDate(post.data.date),
-      readingTime: getReadingTime(post.body),
+      updatedDate: post.data.updatedDate ? formatDate(post.data.updatedDate) : undefined,
+      readingTime: getReadingStats(post.body).label,
+      cover: post.data.cover ? withBase(post.data.cover) : undefined,
       url: withBase(`/blog/${post.slug}`),
-      searchable
+      searchable,
+      titleText,
+      descriptionText,
+      categoryText,
+      tagText,
+      bodyText
     };
   });
 

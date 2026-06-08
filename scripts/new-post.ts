@@ -2,10 +2,20 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import matter from "gray-matter";
 
-const title = process.argv.slice(2).join(" ").trim();
+const args = process.argv.slice(2);
+const typeIndex = args.findIndex((arg) => arg === "--type" || arg.startsWith("--type="));
+const templateType = typeIndex >= 0
+  ? args[typeIndex].startsWith("--type=")
+    ? args[typeIndex].split("=")[1]
+    : args[typeIndex + 1]
+  : "note";
+if (typeIndex >= 0) {
+  args.splice(typeIndex, args[typeIndex].startsWith("--type=") ? 1 : 2);
+}
+const title = args.join(" ").trim();
 
 if (!title) {
-  console.error("Usage: npm run new:post -- 文章标题");
+  console.error("Usage: npm run new:post -- [--type note|tutorial|review|debug] 文章标题");
   process.exit(1);
 }
 
@@ -25,8 +35,51 @@ const slugify = (value: string) =>
 
 const fileName = `${today}-${slugify(title)}.md`;
 const filePath = path.join(blogDir, fileName);
+const templates: Record<string, string> = {
+  note: `
+## 背景
 
-const content = matter.stringify("\n从这里开始写正文。\n", {
+从这里开始写正文。
+
+## 记录
+
+## 小结
+`,
+  tutorial: `
+## 目标
+
+## 准备
+
+## 步骤
+
+## 常见问题
+
+## 小结
+`,
+  review: `
+## 项目背景
+
+## 技术栈
+
+## 关键实现
+
+## 复盘
+`,
+  debug: `
+## 现象
+
+## 排查过程
+
+## 根因
+
+## 修复
+
+## 预防
+`
+};
+const body = templates[templateType] ?? templates.note;
+
+const content = matter.stringify(body, {
   title,
   description: "请填写文章描述",
   date: today,

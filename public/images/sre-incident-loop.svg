@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 520" role="img" aria-labelledby="title desc">
+  <title id="title">Incident review loop</title>
+  <desc id="desc">A loop connecting SLO, alerts, incident response, review, and backlog.</desc>
+  <rect width="1100" height="520" rx="24" fill="#f8fafc"/>
+  <rect x="54" y="54" width="992" height="412" rx="22" fill="#f7fee7" stroke="#65a30d"/>
+  <circle cx="550" cy="260" r="150" fill="none" stroke="#334155" stroke-width="8" stroke-dasharray="18 14"/>
+  <g font-family="Arial, sans-serif" font-size="23" font-weight="700">
+    <rect x="460" y="72" width="180" height="72" rx="16" fill="#365314"/>
+    <text x="505" y="117" fill="#fff">SLO</text>
+    <rect x="762" y="224" width="190" height="72" rx="16" fill="#155e75"/>
+    <text x="805" y="269" fill="#fff">Alert</text>
+    <rect x="460" y="376" width="180" height="72" rx="16" fill="#7c2d12"/>
+    <text x="504" y="421" fill="#fff">Review</text>
+    <rect x="148" y="224" width="190" height="72" rx="16" fill="#1d4ed8"/>
+    <text x="194" y="269" fill="#fff">Backlog</text>
+  </g>
+  <text x="344" y="266" fill="#334155" font-family="Arial, sans-serif" font-size="22">把事故结论写回系统，而不是只写进会议纪要。</text>
+</svg>

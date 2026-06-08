@@ -1,5 +1,6 @@
 ---
 import { getCollection } from "astro:content";
+import { brand } from "@/data/site";
 import BaseLayout from "@/layouts/BaseLayout.astro";
 import { filterPublished, formatDate, sortPosts } from "@/utils/posts";
 import { withBase } from "@/utils/url";
@@ -15,7 +16,7 @@ const groups = posts.reduce<Record<string, typeof posts>>((acc, post) => {
 const years = Object.keys(groups).sort((a, b) => Number(b) - Number(a));
 ---
 
-<BaseLayout title="归档 | Longwu.dev" description="按年份归档浏览全部技术文章。">
+<BaseLayout title={`归档 | ${brand.name}`} description="按年份归档浏览全部技术文章。">
   <section class="content-grid py-12">
     <div class="mx-auto max-w-4xl">
       <div class="mb-10">

@@ -1,0 +1,58 @@
+---
+import { getCollection } from "astro:content";
+import { brand } from "@/data/site";
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import PostCard from "@/components/PostCard.astro";
+import { filterPublished, sortPosts } from "@/utils/posts";
+import { withBase } from "@/utils/url";
+
+export async function getStaticPaths() {
+  const pageSize = 6;
+  const posts = sortPosts(filterPublished(await getCollection("blog")));
+  const totalPages = Math.max(1, Math.ceil(posts.length / pageSize));
+
+  return Array.from({ length: Math.max(0, totalPages - 1) }, (_, index) => {
+    const page = index + 2;
+    return {
+      params: { page: String(page) },
+      props: {
+        page,
+        totalPages,
+        posts: posts.slice((page - 1) * pageSize, page * pageSize)
+      }
+    };
+  });
+}
+
+const { page, totalPages, posts } = Astro.props;
+---
+
+<BaseLayout title={`文章第 ${page} 页 | ${brand.name}`} description={`按时间倒序浏览第 ${page} 页技术文章。`}>
+  <section class="content-grid py-12">
+    <div class="mb-10 max-w-2xl">
+      <h1 class="text-4xl font-black text-slate-950 dark:text-white">文章</h1>
+      <p class="mt-4 text-lg leading-8 text-slate-600 dark:text-slate-300">第 {page} / {totalPages} 页</p>
+    </div>
+    <div class="mx-auto grid max-w-4xl gap-5">
+      {posts.map((post) => <PostCard post={post} />)}
+      <nav class="mt-4 flex items-center justify-between border-t border-slate-200 pt-6 text-sm font-semibold dark:border-slate-800" aria-label="文章分页">
+        {page > 2 ? (
+          <a class="rounded-full border border-slate-300 px-4 py-2 text-slate-700 transition hover:border-teal-400 hover:text-teal-700 dark:border-slate-700 dark:text-slate-200 dark:hover:text-teal-200" href={withBase(`/blog/page/${page - 1}`)}>
+            上一页
+          </a>
+        ) : (
+          <a class="rounded-full border border-slate-300 px-4 py-2 text-slate-700 transition hover:border-teal-400 hover:text-teal-700 dark:border-slate-700 dark:text-slate-200 dark:hover:text-teal-200" href={withBase("/blog")}>
+            上一页
+          </a>
+        )}
+        {page < totalPages ? (
+          <a class="rounded-full border border-slate-300 px-4 py-2 text-slate-700 transition hover:border-teal-400 hover:text-teal-700 dark:border-slate-700 dark:text-slate-200 dark:hover:text-teal-200" href={withBase(`/blog/page/${page + 1}`)}>
+            下一页
+          </a>
+        ) : (
+          <span class="text-slate-500 dark:text-slate-400">已到最后一页</span>
+        )}
+      </nav>
+    </div>
+  </section>
+</BaseLayout>

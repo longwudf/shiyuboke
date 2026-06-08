@@ -11,9 +11,22 @@ import { createServer as createViteServer } from "vite";
 const execFileAsync = promisify(execFile);
 const root = process.cwd();
 const blogDir = path.join(root, "src", "content", "blog");
-const imageDir = path.join(root, "public", "images", "blog");
+const publicDir = path.join(root, "public");
+const imageDir = path.join(publicDir, "images", "blog");
 const trashDir = path.join(root, ".trash", "posts");
 const allowedImageExts = new Set([".jpg", ".jpeg", ".png", ".webp", ".gif", ".svg"]);
+const managedGitPaths = ["src/content/blog", "public/images", "src/data", ".trash"];
+
+const contentFiles = {
+  site: path.join(root, "src", "data", "site.json"),
+  projects: path.join(root, "src", "data", "projects.json"),
+  friends: path.join(root, "src", "data", "friends.json"),
+  resources: path.join(root, "src", "data", "resources.json"),
+  about: path.join(root, "src", "data", "about.json"),
+  now: path.join(root, "src", "data", "now.json")
+} as const;
+
+type ContentKey = keyof typeof contentFiles;
 
 type PostPayload = {
   id?: string;
@@ -24,6 +37,8 @@ type PostPayload = {
   updatedDate?: string;
   category?: string;
   tags?: string[];
+  series?: string;
+  seriesOrder?: number | string | null;
   cover?: string;
   draft?: boolean;
   featured?: boolean;
@@ -74,17 +89,26 @@ const isValidDate = (value: unknown) => {
   return Number.isFinite(new Date(value).valueOf());
 };
 
+const toPositiveInteger = (value: PostPayload["seriesOrder"]) => {
+  if (value === "" || value === null || value === undefined) return undefined;
+  const numberValue = Number(value);
+  return Number.isInteger(numberValue) && numberValue > 0 ? numberValue : Number.NaN;
+};
+
 const normalizePost = (payload: PostPayload, existingId?: string) => {
   const date = payload.date || today();
+  const seriesOrder = toPositiveInteger(payload.seriesOrder);
   const slug = slugify(payload.slug || payload.title || "untitled");
   return {
     slug,
     title: payload.title?.trim() ?? "",
     description: payload.description?.trim() ?? "",
     date,
-    updatedDate: today(),
+    updatedDate: payload.updatedDate || today(),
     category: payload.category?.trim() || "未分类",
     tags: Array.isArray(payload.tags) ? payload.tags.map((tag) => String(tag).trim()).filter(Boolean) : [],
+    series: payload.series?.trim() || "",
+    seriesOrder,
     cover: payload.cover?.trim() ?? "",
     draft: Boolean(payload.draft),
     featured: Boolean(payload.featured),
@@ -95,14 +119,20 @@ const normalizePost = (payload: PostPayload, existingId?: string) => {
 
 const validatePost = (post: ReturnType<typeof normalizePost>) => {
   const errors: string[] = [];
+  const normalizedTags = post.tags.map((tag) => tag.toLowerCase());
   if (!post.title) errors.push("title is required");
   if (!post.description) errors.push("description is required");
   if (!isValidDate(post.date)) errors.push("date must be valid");
   if (!isValidDate(post.updatedDate)) errors.push("updatedDate must be valid");
+  if (new Date(post.updatedDate).valueOf() < new Date(post.date).valueOf()) errors.push("updatedDate cannot be earlier than date");
   if (!post.category) errors.push("category is required");
   if (!Array.isArray(post.tags)) errors.push("tags must be an array");
+  if (new Set(normalizedTags).size !== normalizedTags.length) errors.push("tags must be unique");
   if (typeof post.draft !== "boolean") errors.push("draft must be boolean");
   if (typeof post.featured !== "boolean") errors.push("featured must be boolean");
+  if (Number.isNaN(post.seriesOrder)) errors.push("seriesOrder must be a positive integer");
+  if (post.seriesOrder !== undefined && !post.series) errors.push("series is required when seriesOrder is set");
+  if (post.cover && !post.cover.startsWith("/")) errors.push("cover must start with /");
   if (errors.length) throw new Error(errors.join("; "));
 };
 
@@ -133,6 +163,8 @@ const readPost = async (id: string) => {
     updatedDate: parsed.data.updatedDate ? new Date(parsed.data.updatedDate).toISOString().slice(0, 10) : "",
     category: parsed.data.category ?? "未分类",
     tags: Array.isArray(parsed.data.tags) ? parsed.data.tags : [],
+    series: typeof parsed.data.series === "string" ? parsed.data.series : "",
+    seriesOrder: Number.isInteger(parsed.data.seriesOrder) ? parsed.data.seriesOrder : undefined,
     cover: parsed.data.cover ?? "",
     draft: Boolean(parsed.data.draft),
     featured: Boolean(parsed.data.featured),
@@ -147,7 +179,7 @@ const writePost = async (payload: PostPayload, existingId?: string) => {
   const targetName = fileNameForPost(post, existingId);
   const targetPath = postPath(targetName);
   const currentPath = existingId ? postPath(existingId) : undefined;
-  const content = matter.stringify(`${post.body.trim()}\n`, {
+  const frontmatter: Record<string, unknown> = {
     title: post.title,
     description: post.description,
     date: post.date,
@@ -157,7 +189,12 @@ const writePost = async (payload: PostPayload, existingId?: string) => {
     cover: post.cover,
     draft: post.draft,
     featured: post.featured
-  });
+  };
+
+  if (post.series) frontmatter.series = post.series;
+  if (post.seriesOrder !== undefined) frontmatter.seriesOrder = post.seriesOrder;
+
+  const content = matter.stringify(`${post.body.trim()}\n`, frontmatter);
 
   if (!existingId && existsSync(targetPath)) throw new Error(`Post already exists: ${targetName}`);
   if (existingId && targetName !== existingId && existsSync(targetPath)) throw new Error(`Target post already exists: ${targetName}`);
@@ -167,10 +204,133 @@ const writePost = async (payload: PostPayload, existingId?: string) => {
   return readPost(targetName);
 };
 
+const safeContentKey = (key: string): ContentKey => {
+  if (!(key in contentFiles)) throw new Error("Unknown content key");
+  return key as ContentKey;
+};
+
+const contentPath = (key: ContentKey) => assertWithin(contentFiles[key], path.join(root, "src", "data"));
+
+const readJsonContent = async (key: ContentKey) => {
+  const source = await fs.readFile(contentPath(key), "utf8");
+  return JSON.parse(source) as unknown;
+};
+
+const writeJsonContent = async (key: ContentKey, value: unknown) => {
+  if (typeof value !== "object" || value === null) throw new Error("Content payload must be an object or array");
+  await fs.writeFile(contentPath(key), `${JSON.stringify(value, null, 2)}\n`, "utf8");
+  return readJsonContent(key);
+};
+
+const resolveCommand = (command: string, args: string[]) => {
+  if (command !== "npm") return { executable: command, args };
+
+  const npmExecPath =
+    process.env.npm_execpath ||
+    path.join(path.dirname(process.execPath), "node_modules", "npm", "bin", "npm-cli.js");
+  if (!existsSync(npmExecPath)) throw new Error("Unable to locate npm CLI");
+
+  return {
+    executable: process.execPath,
+    args: [npmExecPath, ...args]
+  };
+};
+
+const runCommand = async (command: string, args: string[]) => {
+  const resolved = resolveCommand(command, args);
+  const result = await execFileAsync(resolved.executable, resolved.args, { cwd: root, windowsHide: true, maxBuffer: 1024 * 1024 * 8 });
+  return {
+    stdout: result.stdout,
+    stderr: result.stderr,
+    output: `${result.stdout ?? ""}${result.stderr ?? ""}`.trim()
+  };
+};
+
+const runCommandJson = async (command: string, args: string[]) => {
+  try {
+    const result = await runCommand(command, args);
+    return { ok: true, ...result };
+  } catch (error) {
+    const err = error as Error & { stdout?: string; stderr?: string };
+    return {
+      ok: false,
+      error: `${err.message}\n${err.stdout ?? ""}\n${err.stderr ?? ""}`.trim(),
+      stdout: err.stdout ?? "",
+      stderr: err.stderr ?? ""
+    };
+  }
+};
+
+const isGitRepo = async () => {
+  const result = await runCommandJson("git", ["rev-parse", "--is-inside-work-tree"]);
+  return result.ok && result.stdout.trim() === "true";
+};
+
+const getGitStatus = async () => {
+  const repo = await isGitRepo();
+  if (!repo) {
+    return {
+      isRepo: false,
+      branch: "",
+      remote: "",
+      hasRemote: false,
+      changes: [],
+      clean: true,
+      needsSetup: true
+    };
+  }
+
+  const [branchResult, remoteResult, statusResult] = await Promise.all([
+    runCommandJson("git", ["rev-parse", "--abbrev-ref", "HEAD"]),
+    runCommandJson("git", ["remote", "get-url", "origin"]),
+    runCommandJson("git", ["status", "--porcelain"])
+  ]);
+  const changes = statusResult.stdout.split(/\r?\n/).filter(Boolean);
+
+  return {
+    isRepo: true,
+    branch: branchResult.ok ? branchResult.stdout.trim() : "",
+    remote: remoteResult.ok ? remoteResult.stdout.trim() : "",
+    hasRemote: remoteResult.ok && Boolean(remoteResult.stdout.trim()),
+    changes,
+    clean: changes.length === 0,
+    needsSetup: !remoteResult.ok || !remoteResult.stdout.trim()
+  };
+};
+
+const listImages = async () => {
+  const base = path.join(publicDir, "images");
+  const results: Array<{ name: string; path: string; size: number; modified: string }> = [];
+
+  const walk = async (directory: string) => {
+    const entries = await fs.readdir(directory, { withFileTypes: true });
+    for (const entry of entries) {
+      const fullPath = assertWithin(path.join(directory, entry.name), base);
+      if (entry.isDirectory()) {
+        await walk(fullPath);
+        continue;
+      }
+      if (!allowedImageExts.has(path.extname(entry.name).toLowerCase())) continue;
+      const stat = await fs.stat(fullPath);
+      const publicPath = `/${path.relative(publicDir, fullPath).replace(/\\/g, "/")}`;
+      results.push({
+        name: entry.name,
+        path: publicPath,
+        size: stat.size,
+        modified: stat.mtime.toISOString()
+      });
+    }
+  };
+
+  if (existsSync(base)) await walk(base);
+  return results.sort((a, b) => b.modified.localeCompare(a.modified));
+};
+
 const app = express();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 8 * 1024 * 1024 } });
 
-app.use(express.json({ limit: "2mb" }));
+app.use(express.json({ limit: "4mb" }));
+app.use("/images", express.static(path.join(publicDir, "images")));
 
 app.get("/api/posts", async (_request, response) => {
   try {
@@ -245,6 +405,32 @@ app.post("/api/posts/:id/unpublish", async (request, response) => {
   }
 });
 
+app.get("/api/content/:key", async (request, response) => {
+  try {
+    const key = safeContentKey(request.params.key);
+    response.json({ key, content: await readJsonContent(key) });
+  } catch (error) {
+    response.status(404).json({ error: (error as Error).message });
+  }
+});
+
+app.put("/api/content/:key", async (request, response) => {
+  try {
+    const key = safeContentKey(request.params.key);
+    response.json({ key, content: await writeJsonContent(key, request.body) });
+  } catch (error) {
+    response.status(400).json({ error: (error as Error).message });
+  }
+});
+
+app.get("/api/images", async (_request, response) => {
+  try {
+    response.json({ images: await listImages() });
+  } catch (error) {
+    response.status(500).json({ error: (error as Error).message });
+  }
+});
+
 app.post("/api/images", upload.single("image"), async (request, response) => {
   try {
     await ensureDir();
@@ -260,22 +446,81 @@ app.post("/api/images", upload.single("image"), async (request, response) => {
   }
 });
 
+app.post("/api/checks/:name", async (request, response) => {
+  const checks = {
+    posts: ["npm", ["run", "check:posts"]],
+    images: ["npm", ["run", "check:images"]],
+    astro: ["npm", ["run", "check"]],
+    build: ["npm", ["run", "build"]]
+  } as const;
+  const name = request.params.name as keyof typeof checks;
+  const check = checks[name];
+  if (!check) {
+    response.status(404).json({ error: "Unknown check" });
+    return;
+  }
+
+  const result = await runCommandJson(check[0], [...check[1]]);
+  response.status(result.ok ? 200 : 500).json({ name, ...result });
+});
+
+app.get("/api/git/status", async (_request, response) => {
+  try {
+    response.json(await getGitStatus());
+  } catch (error) {
+    response.status(500).json({ error: (error as Error).message });
+  }
+});
+
+app.post("/api/git/init", async (request, response) => {
+  try {
+    const branch = String(request.body?.branch || "main").trim() || "main";
+    const remoteUrl = String(request.body?.remoteUrl || "").trim();
+    if (!/^[A-Za-z0-9._/-]+$/.test(branch)) throw new Error("Invalid branch name");
+    if (!remoteUrl) throw new Error("remoteUrl is required");
+
+    if (!(await isGitRepo())) await runCommand("git", ["init"]);
+    await runCommand("git", ["branch", "-M", branch]);
+    const remote = await runCommandJson("git", ["remote", "get-url", "origin"]);
+    await runCommand("git", remote.ok ? ["remote", "set-url", "origin", remoteUrl] : ["remote", "add", "origin", remoteUrl]);
+    response.json({ message: "Git 仓库已初始化，remote 已设置。", status: await getGitStatus() });
+  } catch (error) {
+    const err = error as Error & { stdout?: string; stderr?: string };
+    response.status(400).json({ error: `${err.message}\n${err.stdout ?? ""}\n${err.stderr ?? ""}`.trim() });
+  }
+});
+
+app.post("/api/git/commit", async (request, response) => {
+  try {
+    if (!(await isGitRepo())) throw new Error("当前目录还不是 Git 仓库，请先初始化。");
+    const firstCommit = Boolean(request.body?.firstCommit);
+    const message = String(request.body?.message || (firstCommit ? "Initial site content" : "Update site content")).trim();
+    if (!message) throw new Error("Commit message is required");
+
+    await runCommand("git", firstCommit ? ["add", "."] : ["add", ...managedGitPaths]);
+    const staged = await runCommand("git", ["diff", "--cached", "--name-only"]);
+    if (!staged.stdout.trim()) {
+      response.json({ message: "没有可提交的托管内容变更。", output: "" });
+      return;
+    }
+
+    const commit = await runCommand("git", ["commit", "-m", message]);
+    response.json({ message: "已创建提交。", output: commit.output });
+  } catch (error) {
+    const err = error as Error & { stdout?: string; stderr?: string };
+    response.status(500).json({ error: `${err.message}\n${err.stdout ?? ""}\n${err.stderr ?? ""}`.trim() });
+  }
+});
+
 app.post("/api/git/push", async (_request, response) => {
   try {
-    const status = await execFileAsync("git", ["status", "--porcelain"], { cwd: root });
-    if (!status.stdout.trim()) {
-      response.json({ message: "当前没有可提交的文章变更。", output: "" });
-      return;
-    }
-    await execFileAsync("git", ["add", "src/content/blog", "public/images/blog", ".trash"], { cwd: root });
-    const staged = await execFileAsync("git", ["diff", "--cached", "--name-only"], { cwd: root });
-    if (!staged.stdout.trim()) {
-      response.json({ message: "没有文章、图片或回收站变更需要提交。", output: status.stdout });
-      return;
-    }
-    const commit = await execFileAsync("git", ["commit", "-m", "Update blog posts"], { cwd: root });
-    const push = await execFileAsync("git", ["push"], { cwd: root });
-    response.json({ message: "已提交并推送。", output: `${commit.stdout}\n${push.stdout}` });
+    const status = await getGitStatus();
+    if (!status.isRepo) throw new Error("当前目录还不是 Git 仓库，请先初始化。");
+    if (!status.hasRemote) throw new Error("未设置 origin remote。");
+    const branch = status.branch || "main";
+    const upstream = await runCommandJson("git", ["rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}"]);
+    const push = await runCommand("git", upstream.ok ? ["push"] : ["push", "-u", "origin", branch]);
+    response.json({ message: "已推送到远程仓库。", output: push.output });
   } catch (error) {
     const err = error as Error & { stdout?: string; stderr?: string };
     response.status(500).json({ error: `${err.message}\n${err.stdout ?? ""}\n${err.stderr ?? ""}`.trim() });
@@ -291,6 +536,8 @@ const vite = await createViteServer({
 app.use(vite.middlewares);
 
 const port = Number(process.env.MANAGER_PORT ?? 5174);
-app.listen(port, "127.0.0.1", () => {
+const httpServer = app.listen(port, "127.0.0.1", () => {
   console.log(`Article manager running at http://127.0.0.1:${port}`);
 });
+const keepAlive = setInterval(() => undefined, 60_000);
+httpServer.on("close", () => clearInterval(keepAlive));

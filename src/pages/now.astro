@@ -1,0 +1,44 @@
+---
+import { getCollection } from "astro:content";
+import { now } from "@/data/now";
+import { brand } from "@/data/site";
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import PostCard from "@/components/PostCard.astro";
+import { filterPublished, sortPosts } from "@/utils/posts";
+import { withBase } from "@/utils/url";
+
+const posts = sortPosts(filterPublished(await getCollection("blog")));
+const latestPosts = posts.slice(0, 2);
+---
+
+<BaseLayout title={`${now.label} | ${brand.name}`} description={now.description}>
+  <section class="content-grid py-12">
+    <div class="mx-auto max-w-4xl">
+      <div class="mb-10">
+        <p class="text-sm font-semibold text-coral">{now.label}</p>
+        <h1 class="mt-2 text-4xl font-black text-slate-950 dark:text-white">{now.title}</h1>
+        <p class="mt-4 text-lg leading-8 text-slate-600 dark:text-slate-300">{now.intro}</p>
+      </div>
+      <div class="grid gap-5 md:grid-cols-3">
+        {now.cards.map((card) => (
+          <article class="surface rounded-lg p-6">
+            <h2 class="font-bold text-slate-950 dark:text-white">{card.title}</h2>
+            <p class="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-300">{card.description}</p>
+          </article>
+        ))}
+      </div>
+      <section class="mt-12">
+        <div class="mb-5 flex items-end justify-between gap-4">
+          <div>
+            <p class="text-sm font-semibold text-teal-700 dark:text-teal-300">Latest</p>
+            <h2 class="mt-1 text-2xl font-black text-slate-950 dark:text-white">最近文章</h2>
+          </div>
+          <a class="text-sm font-semibold text-teal-700 hover:text-teal-900 dark:text-teal-300 dark:hover:text-teal-100" href={withBase("/blog")}>全部文章</a>
+        </div>
+        <div class="grid gap-5 md:grid-cols-2">
+          {latestPosts.map((post) => <PostCard post={post} />)}
+        </div>
+      </section>
+    </div>
+  </section>
+</BaseLayout>

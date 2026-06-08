@@ -6,13 +6,16 @@
   "scripts": {
     "dev": "astro dev",
     "start": "astro dev",
-    "prebuild": "npm run check:posts",
+    "prebuild": "npm run check:posts && npm run check:images",
     "build": "astro check && astro build",
+    "postbuild": "npm run check:site",
     "preview": "astro preview",
     "check": "astro check",
     "manager": "tsx tools/article-manager/server.ts",
     "new:post": "tsx scripts/new-post.ts",
-    "check:posts": "tsx scripts/check-posts.ts"
+    "check:posts": "tsx scripts/check-posts.ts",
+    "check:images": "tsx scripts/check-images.ts",
+    "check:site": "tsx scripts/check-site.ts"
   },
   "dependencies": {
     "@astrojs/check": "^0.9.4",
@@ -20,10 +23,12 @@
     "@astrojs/rss": "^4.0.11",
     "@astrojs/sitemap": "^3.2.1",
     "@astrojs/tailwind": "^5.1.4",
+    "@lucide/astro": "^1.17.0",
     "@vitejs/plugin-react": "^4.3.4",
     "astro": "^5.1.5",
     "express": "^4.21.2",
     "gray-matter": "^4.0.3",
+    "lucide-react": "^1.17.0",
     "multer": "^2.0.2",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",

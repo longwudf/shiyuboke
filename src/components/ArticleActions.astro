@@ -1,0 +1,155 @@
+---
+import { Copy, Heart, Share2 } from "@lucide/astro";
+
+interface Props {
+  title: string;
+  url: string;
+}
+
+const { title, url } = Astro.props;
+---
+
+<section
+  class="surface mt-12 rounded-lg p-5 sm:p-6"
+  data-article-actions
+  data-post-title={title}
+  data-post-url={url}
+  aria-labelledby="article-actions-title"
+>
+  <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+    <div>
+      <p class="text-sm font-semibold text-coral">Interaction</p>
+      <h2 id="article-actions-title" class="mt-1 text-2xl font-black text-slate-950 dark:text-white">喜欢与分享</h2>
+      <p class="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
+        如果这篇笔记刚好帮到你，可以点个喜欢，或者把原文链接分享给需要的人。
+      </p>
+    </div>
+    <div class="flex shrink-0 flex-wrap gap-2">
+      <button
+        type="button"
+        class="inline-flex items-center gap-2 rounded-full border border-rose-200 bg-rose-50 px-4 py-2 text-sm font-semibold text-rose-700 transition hover:-translate-y-0.5 hover:border-rose-300 hover:bg-rose-100 focus:outline-none focus:ring-2 focus:ring-rose-300 dark:border-rose-900/80 dark:bg-rose-950/40 dark:text-rose-200"
+        data-like-button
+        aria-pressed="false"
+      >
+        <Heart size={17} aria-hidden="true" />
+        <span data-like-label>喜欢</span>
+        <span class="rounded-full bg-white px-2 py-0.5 text-xs text-rose-600 dark:bg-rose-950 dark:text-rose-200" data-like-count>0</span>
+      </button>
+      <button
+        type="button"
+        class="inline-flex items-center gap-2 rounded-full border border-teal-200 bg-teal-50 px-4 py-2 text-sm font-semibold text-teal-800 transition hover:-translate-y-0.5 hover:border-teal-300 hover:bg-teal-100 focus:outline-none focus:ring-2 focus:ring-teal-300 dark:border-teal-900/80 dark:bg-teal-950/40 dark:text-teal-200"
+        data-share-button
+      >
+        <Share2 size={17} aria-hidden="true" />
+        分享
+      </button>
+      <button
+        type="button"
+        class="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:-translate-y-0.5 hover:border-coral hover:text-coral focus:outline-none focus:ring-2 focus:ring-coral/30 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
+        data-copy-link-button
+      >
+        <Copy size={17} aria-hidden="true" />
+        复制链接
+      </button>
+    </div>
+  </div>
+  <div class="mt-5 rounded-lg border border-slate-200 bg-white/80 p-4 text-sm leading-6 text-slate-600 dark:border-slate-800 dark:bg-slate-950/50 dark:text-slate-300">
+    <strong class="text-slate-900 dark:text-white">转载说明：</strong>
+    欢迎转载和引用本文，请保留「{title}」标题、作者「诗余」和原文链接；非商业转载无需额外确认，商业使用请先联系作者。
+  </div>
+  <p class="mt-3 min-h-5 text-sm font-medium text-teal-700 dark:text-teal-300" data-action-message aria-live="polite"></p>
+</section>
+
+<script>
+  (() => {
+    type LikeMap = Record<string, string>;
+
+    const storeKey = "shiyu.article.likes";
+    const readLikes = (): LikeMap => {
+      try {
+        return JSON.parse(localStorage.getItem(storeKey) || "{}");
+      } catch {
+        return {};
+      }
+    };
+    const writeLikes = (likes: LikeMap) => localStorage.setItem(storeKey, JSON.stringify(likes));
+    const writeClipboard = async (text: string) => {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(text);
+        return;
+      }
+      const input = document.createElement("textarea");
+      input.value = text;
+      input.setAttribute("readonly", "");
+      input.style.position = "fixed";
+      input.style.opacity = "0";
+      document.body.append(input);
+      input.select();
+      document.execCommand("copy");
+      input.remove();
+    };
+
+    document.querySelectorAll("[data-article-actions]").forEach((root) => {
+      const postUrl = root.getAttribute("data-post-url") || window.location.href;
+      const postTitle = root.getAttribute("data-post-title") || document.title;
+      const likeButton = root.querySelector("[data-like-button]");
+      const likeLabel = root.querySelector("[data-like-label]");
+      const likeCount = root.querySelector("[data-like-count]");
+      const shareButton = root.querySelector("[data-share-button]");
+      const copyButton = root.querySelector("[data-copy-link-button]");
+      const message = root.querySelector("[data-action-message]");
+      let messageTimer: number | undefined;
+
+      const setMessage = (text: string) => {
+        if (!(message instanceof HTMLElement)) return;
+        window.clearTimeout(messageTimer);
+        message.textContent = text;
+        messageTimer = window.setTimeout(() => {
+          message.textContent = "";
+        }, 2400);
+      };
+
+      const syncLike = () => {
+        const likes = readLikes();
+        const liked = Boolean(likes[postUrl]);
+        if (likeButton instanceof HTMLButtonElement) likeButton.setAttribute("aria-pressed", String(liked));
+        if (likeLabel instanceof HTMLElement) likeLabel.textContent = liked ? "已喜欢" : "喜欢";
+        if (likeCount instanceof HTMLElement) likeCount.textContent = liked ? "1" : "0";
+      };
+
+      likeButton?.addEventListener("click", () => {
+        const likes = readLikes();
+        if (likes[postUrl]) delete likes[postUrl];
+        else likes[postUrl] = new Date().toISOString();
+        writeLikes(likes);
+        syncLike();
+        setMessage(likes[postUrl] ? "已记下这份喜欢。" : "已取消喜欢。");
+      });
+
+      shareButton?.addEventListener("click", async () => {
+        try {
+          if (navigator.share) {
+            await navigator.share({ title: postTitle, url: postUrl });
+            setMessage("已打开系统分享面板。");
+            return;
+          }
+          await writeClipboard(`${postTitle}\n${postUrl}`);
+          setMessage("当前浏览器不支持系统分享，已复制标题和链接。");
+        } catch {
+          setMessage("分享没有完成，可以直接复制链接。");
+        }
+      });
+
+      copyButton?.addEventListener("click", async () => {
+        try {
+          await writeClipboard(postUrl);
+          setMessage("原文链接已复制。");
+        } catch {
+          setMessage("复制失败，请手动复制浏览器地址。");
+        }
+      });
+
+      syncLike();
+    });
+  })();
+</script>

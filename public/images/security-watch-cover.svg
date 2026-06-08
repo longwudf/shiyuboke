@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 675" role="img" aria-labelledby="title desc">
+  <title id="title">June 2026 Security Watch</title>
+  <desc id="desc">Security watch dashboard with CVE signals, patch lanes, and risk radar.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#0f172a"/>
+      <stop offset="0.55" stop-color="#134e4a"/>
+      <stop offset="1" stop-color="#7f1d1d"/>
+    </linearGradient>
+    <linearGradient id="panel" x1="0" x2="1">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.18"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0.06"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="675" fill="url(#bg)"/>
+  <rect x="70" y="72" width="1060" height="531" rx="32" fill="url(#panel)" stroke="#99f6e4" stroke-opacity="0.35"/>
+  <text x="110" y="155" fill="#f8fafc" font-family="Arial, sans-serif" font-size="58" font-weight="800">Security Watch</text>
+  <text x="112" y="205" fill="#ccfbf1" font-family="Arial, sans-serif" font-size="24">CISA KEV · Open Source Advisory · Patch Priority</text>
+  <g transform="translate(110 270)">
+    <rect width="260" height="170" rx="18" fill="#0f172a" stroke="#5eead4"/>
+    <text x="26" y="52" fill="#f8fafc" font-family="Arial, sans-serif" font-size="30" font-weight="700">KEV</text>
+    <text x="26" y="98" fill="#fecaca" font-family="Arial, sans-serif" font-size="22">Known exploited</text>
+    <text x="26" y="134" fill="#99f6e4" font-family="Arial, sans-serif" font-size="22">Due-date driven</text>
+  </g>
+  <g transform="translate(460 270)">
+    <rect width="260" height="170" rx="18" fill="#0f172a" stroke="#fb7185"/>
+    <text x="26" y="52" fill="#f8fafc" font-family="Arial, sans-serif" font-size="30" font-weight="700">CVE</text>
+    <text x="26" y="98" fill="#fecaca" font-family="Arial, sans-serif" font-size="22">Exploit signal</text>
+    <text x="26" y="134" fill="#99f6e4" font-family="Arial, sans-serif" font-size="22">Asset exposure</text>
+  </g>
+  <g transform="translate(810 270)">
+    <rect width="260" height="170" rx="18" fill="#0f172a" stroke="#facc15"/>
+    <text x="26" y="52" fill="#f8fafc" font-family="Arial, sans-serif" font-size="30" font-weight="700">Patch</text>
+    <text x="26" y="98" fill="#fecaca" font-family="Arial, sans-serif" font-size="22">Version target</text>
+    <text x="26" y="134" fill="#99f6e4" font-family="Arial, sans-serif" font-size="22">Rollback plan</text>
+  </g>
+  <path d="M238 510h724" stroke="#ccfbf1" stroke-width="8" stroke-linecap="round" stroke-dasharray="20 24"/>
+  <circle cx="238" cy="510" r="20" fill="#5eead4"/>
+  <circle cx="600" cy="510" r="20" fill="#fb7185"/>
+  <circle cx="962" cy="510" r="20" fill="#facc15"/>
+</svg>

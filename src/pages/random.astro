@@ -1,0 +1,38 @@
+---
+import { getCollection } from "astro:content";
+import { brand } from "@/data/site";
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import { filterPublished, sortPosts } from "@/utils/posts";
+import { withBase } from "@/utils/url";
+
+const posts = sortPosts(filterPublished(await getCollection("blog")));
+const urls = posts.map((post) => withBase(`/blog/${post.slug}`));
+---
+
+<BaseLayout title={`随便看看 | ${brand.name}`} description="随机打开一篇技术文章。">
+  <section class="content-grid py-12">
+    <div class="mx-auto max-w-2xl">
+      <h1 class="text-4xl font-black text-slate-950 dark:text-white">随便看看</h1>
+      <p class="mt-4 text-lg leading-8 text-slate-600 dark:text-slate-300">正在为你随机挑选一篇文章。</p>
+      <div class="mt-8 flex flex-wrap gap-3">
+        <a class="rounded-full bg-slate-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-teal-700 dark:bg-white dark:text-slate-950 dark:hover:bg-teal-100" href={withBase("/blog")}>全部文章</a>
+        <button id="random-button" class="rounded-full border border-slate-300 px-5 py-3 text-sm font-semibold text-slate-800 transition hover:border-coral hover:text-coral dark:border-slate-700 dark:text-slate-100" type="button" data-posts={JSON.stringify(urls)}>
+          换一篇
+        </button>
+      </div>
+    </div>
+  </section>
+</BaseLayout>
+
+<script>
+  const button = document.getElementById("random-button") as HTMLButtonElement | null;
+  const urls = button ? JSON.parse(button.dataset.posts || "[]") as string[] : [];
+  const openRandom = () => {
+    if (urls.length === 0) return;
+    const url = urls[Math.floor(Math.random() * urls.length)];
+    window.location.href = url;
+  };
+
+  button?.addEventListener("click", openRandom);
+  window.setTimeout(openRandom, 500);
+</script>

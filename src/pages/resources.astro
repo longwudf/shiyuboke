@@ -1,0 +1,35 @@
+---
+import { resources } from "@/data/resources";
+import { brand } from "@/data/site";
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import { withBase } from "@/utils/url";
+---
+
+<BaseLayout title={`${resources.title} | ${brand.name}`} description={resources.description}>
+  <section class="content-grid py-12">
+    <div class="mb-10 max-w-2xl">
+      <h1 class="text-4xl font-black text-slate-950 dark:text-white">{resources.title}</h1>
+      <p class="mt-4 text-lg leading-8 text-slate-600 dark:text-slate-300">{resources.intro}</p>
+    </div>
+    <div class="grid gap-6">
+      {resources.groups.map((group) => (
+        <section>
+          <h2 class="text-2xl font-black text-slate-950 dark:text-white">{group.title}</h2>
+          <div class="mt-4 grid gap-4 md:grid-cols-2">
+            {group.items.map((item) => (
+              <a
+                class="surface rounded-lg p-5 transition hover:-translate-y-0.5 hover:border-teal-300"
+                href={item.href.startsWith("http") ? item.href : withBase(item.href)}
+                target={item.href.startsWith("http") ? "_blank" : undefined}
+                rel={item.href.startsWith("http") ? "noreferrer" : undefined}
+              >
+                <strong class="text-slate-950 dark:text-white">{item.name}</strong>
+                <span class="mt-2 block text-sm leading-6 text-slate-600 dark:text-slate-300">{item.description}</span>
+              </a>
+            ))}
+          </div>
+        </section>
+      ))}
+    </div>
+  </section>
+</BaseLayout>

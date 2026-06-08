@@ -1,0 +1,145 @@
+{
+  "brand": {
+    "name": "诗余博客",
+    "shortName": "诗余",
+    "author": "诗余",
+    "tagline": "随缘更新的笔记与有趣知识分享",
+    "title": "诗余博客 | 笔记、分享与有趣知识",
+    "description": "这里用来记录学习笔记、工程实践和一些有趣的东西或知识，更新随缘，但尽量写得清楚可复用。",
+    "email": "longwudf@gmail.com",
+    "profileUrl": "https://longwudf.github.io/shiyuboke/",
+    "avatar": "https://longwudf.github.io/shiyuboke/favicon.svg"
+  },
+  "navigation": [
+    {
+      "href": "/",
+      "label": "首页"
+    },
+    {
+      "href": "/blog",
+      "label": "文章"
+    },
+    {
+      "href": "/search",
+      "label": "搜索"
+    },
+    {
+      "href": "/archive",
+      "label": "归档"
+    },
+    {
+      "href": "/projects",
+      "label": "专题"
+    },
+    {
+      "href": "/now",
+      "label": "Now"
+    },
+    {
+      "href": "/resources",
+      "label": "资源"
+    },
+    {
+      "href": "/friends",
+      "label": "友链"
+    },
+    {
+      "href": "/about",
+      "label": "关于"
+    }
+  ],
+  "footerLinks": [
+    {
+      "href": "/rss.xml",
+      "label": "RSS"
+    },
+    {
+      "href": "/friends",
+      "label": "友链"
+    },
+    {
+      "href": "/sitemap-index.xml",
+      "label": "Sitemap"
+    }
+  ],
+  "home": {
+    "eyebrow": "诗余博客",
+    "headline": "把学到的、遇到的、觉得有趣的东西认真记下来。",
+    "intro": "这里主要用来做笔记，也分享一些技术知识、工程经验和偶然读到的有趣东西。更新不赶节奏，想清楚了就写一篇。",
+    "actions": [
+      {
+        "href": "/blog",
+        "label": "阅读文章",
+        "variant": "primary"
+      },
+      {
+        "href": "/projects",
+        "label": "查看专题",
+        "variant": "secondary"
+      },
+      {
+        "href": "/search",
+        "label": "搜索笔记",
+        "variant": "secondary"
+      },
+      {
+        "href": "/random",
+        "label": "随便看看",
+        "variant": "secondary"
+      }
+    ],
+    "socialLinks": [
+      {
+        "href": "https://github.com/longwudf",
+        "label": "GitHub",
+        "external": true
+      },
+      {
+        "href": "/rss.xml",
+        "label": "RSS"
+      },
+      {
+        "href": "/friends",
+        "label": "友链"
+      }
+    ],
+    "now": {
+      "label": "Now",
+      "title": "当前关注",
+      "description": "近期会把零散阅读、实践踩坑和觉得值得留存的小知识整理成笔记，随缘更新。"
+    },
+    "featured": {
+      "label": "Featured",
+      "title": "精选文章",
+      "linkLabel": "查看归档"
+    },
+    "latest": {
+      "label": "Latest",
+      "title": "最新文章",
+      "linkLabel": "全部文章"
+    },
+    "projects": {
+      "label": "Topics",
+      "title": "专题入口",
+      "description": "专题只是给笔记分个类，方便以后回头找：有技术实践，也有一些轻松但值得记录的知识。",
+      "actionLabel": "进入专题页",
+      "cards": [
+        {
+          "label": "Security",
+          "title": "安全动态",
+          "description": "跟踪已知利用、供应链风险和补丁优先级。"
+        },
+        {
+          "label": "Browser",
+          "title": "浏览器机制",
+          "description": "拆解隔离、渲染流水线和前端性能边界。"
+        },
+        {
+          "label": "Reliability",
+          "title": "SRE 与 AI",
+          "description": "把错误预算、事故复盘和 AI 上下文工程放进可落地流程。"
+        }
+      ]
+    }
+  }
+}

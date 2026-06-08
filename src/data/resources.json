@@ -1,0 +1,29 @@
+{
+  "title": "资源",
+  "description": "常用工具、文档和写作维护资源。",
+  "intro": "收集写技术博客和维护静态站点时会反复用到的工具、文档和入口。",
+  "groups": [
+    {
+      "title": "静态站点",
+      "items": [
+        { "name": "Astro Docs", "description": "Astro 框架、内容集合和部署文档。", "href": "https://docs.astro.build/" },
+        { "name": "GitHub Pages", "description": "静态站点托管和 Actions 部署入口。", "href": "https://docs.github.com/pages" }
+      ]
+    },
+    {
+      "title": "前端工程",
+      "items": [
+        { "name": "TypeScript Handbook", "description": "类型系统和工程实践的基础资料。", "href": "https://www.typescriptlang.org/docs/" },
+        { "name": "MDN Web Docs", "description": "浏览器 API、HTML、CSS 和 JavaScript 参考。", "href": "https://developer.mozilla.org/" }
+      ]
+    },
+    {
+      "title": "写作维护",
+      "items": [
+        { "name": "RSS", "description": "博客订阅入口。", "href": "/rss.xml" },
+        { "name": "Sitemap", "description": "站点地图和搜索引擎索引入口。", "href": "/sitemap-index.xml" },
+        { "name": "友情链接", "description": "长期维护的朋友站点和个人技术博客。", "href": "/friends" }
+      ]
+    }
+  ]
+}

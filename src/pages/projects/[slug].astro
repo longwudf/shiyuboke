@@ -1,0 +1,62 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import { projects } from "@/data/projects";
+import { brand } from "@/data/site";
+import { withBase } from "@/utils/url";
+
+export function getStaticPaths() {
+  return projects.map((project) => ({
+    params: { slug: project.slug },
+    props: { project }
+  }));
+}
+
+const { project } = Astro.props;
+const resolveLink = (href: string) => href.startsWith("http") ? href : withBase(href);
+---
+
+<BaseLayout title={`${project.name} | ${brand.name}`} description={project.summary}>
+  <section class="content-grid py-12">
+    <div class="mx-auto max-w-4xl">
+      <a class="mb-8 inline-flex text-sm font-medium text-teal-700 hover:text-teal-900 dark:text-teal-300 dark:hover:text-teal-100" href={withBase("/projects")}>
+        返回专题列表
+      </a>
+      <div class="mb-10">
+        <p class="text-sm font-semibold text-coral">Topic</p>
+        <h1 class="mt-2 text-4xl font-black text-slate-950 dark:text-white">{project.name}</h1>
+        <p class="mt-4 text-lg leading-8 text-slate-600 dark:text-slate-300">{project.description}</p>
+      </div>
+      <div class="grid gap-5 lg:grid-cols-[0.8fr_1.2fr]">
+        <aside class="surface rounded-lg p-6">
+          <h2 class="font-bold text-slate-950 dark:text-white">技术栈</h2>
+          <div class="mt-4 flex flex-wrap gap-2">
+            {project.stack.map((item) => <span class="tag-pill">{item}</span>)}
+          </div>
+        </aside>
+        <section class="surface rounded-lg p-6">
+          <h2 class="font-bold text-slate-950 dark:text-white">关键点</h2>
+          <ul class="mt-4 space-y-3 text-slate-600 dark:text-slate-300">
+            {project.highlights.map((item) => (
+              <li class="rounded-lg border border-slate-200 px-4 py-3 dark:border-slate-800">{item}</li>
+            ))}
+          </ul>
+        </section>
+      </div>
+      <section class="surface mt-6 rounded-lg p-6">
+        <h2 class="font-bold text-slate-950 dark:text-white">相关文章</h2>
+        <div class="mt-4 flex flex-wrap gap-3">
+          {project.links.map((link) => (
+            <a
+              class="rounded-full border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-teal-400 hover:text-teal-700 dark:border-slate-700 dark:text-slate-200 dark:hover:text-teal-200"
+              href={resolveLink(link.href)}
+              target={link.href.startsWith("http") ? "_blank" : undefined}
+              rel={link.href.startsWith("http") ? "noreferrer" : undefined}
+            >
+              {link.label}
+            </a>
+          ))}
+        </div>
+      </section>
+    </div>
+  </section>
+</BaseLayout>

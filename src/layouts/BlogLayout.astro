@@ -2,24 +2,76 @@
 import TagList from "@/components/TagList.astro";
 import TableOfContents from "@/components/TableOfContents.astro";
 import PostCard from "@/components/PostCard.astro";
+import Comments from "@/components/Comments.astro";
+import ArticleActions from "@/components/ArticleActions.astro";
+import { brand } from "@/data/site";
 import BaseLayout from "./BaseLayout.astro";
 import type { BlogPost } from "@/utils/posts";
-import { formatDate, getReadingTime } from "@/utils/posts";
+import { formatDate, getReadingStats } from "@/utils/posts";
 import { withBase } from "@/utils/url";
+
+interface RelatedPost {
+  post: BlogPost;
+  reason: string;
+}
 
 interface Props {
   post: BlogPost;
   headings: { depth: number; slug: string; text: string }[];
   previous?: BlogPost;
   next?: BlogPost;
-  relatedPosts?: BlogPost[];
+  relatedPosts?: RelatedPost[];
+  seriesPosts?: BlogPost[];
+  seriesPrevious?: BlogPost;
+  seriesNext?: BlogPost;
 }
 
-const { post, headings, previous, next, relatedPosts = [] } = Astro.props;
+const {
+  post,
+  headings,
+  previous,
+  next,
+  relatedPosts = [],
+  seriesPosts = [],
+  seriesPrevious,
+  seriesNext
+} = Astro.props;
+const reading = getReadingStats(post.body);
+const cover = post.data.cover || "/favicon.svg";
+const postUrl = withBase(`/blog/${post.slug}`);
+const absolutePostUrl = new URL(postUrl, Astro.site).toString();
+const absoluteCoverUrl = new URL(withBase(cover), Astro.site).toString();
+const articleJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  headline: post.data.title,
+  description: post.data.description,
+  image: absoluteCoverUrl,
+  datePublished: post.data.date.toISOString(),
+  dateModified: (post.data.updatedDate ?? post.data.date).toISOString(),
+  author: {
+    "@type": "Person",
+    name: brand.author
+  },
+  mainEntityOfPage: absolutePostUrl,
+  keywords: post.data.tags.join(", "),
+  timeRequired: `PT${reading.minutes}M`,
+  wordCount: reading.words
+};
 ---
 
-<BaseLayout title={`${post.data.title} | Longwu.dev`} description={post.data.description}>
-  <article class="content-grid py-10 sm:py-12">
+<BaseLayout
+  title={`${post.data.title} | ${brand.name}`}
+  description={post.data.description}
+  image={cover}
+  type="article"
+  publishedDate={post.data.date}
+  updatedDate={post.data.updatedDate ?? post.data.date}
+  tags={post.data.tags}
+  jsonLd={articleJsonLd}
+>
+  <div id="reading-progress" class="fixed left-0 top-0 z-50 h-1 w-0 bg-coral" aria-hidden="true"></div>
+  <article class="content-grid py-10 sm:py-12" data-reading-root>
     <div class="grid gap-10 lg:grid-cols-[minmax(0,1fr)_260px] lg:items-start">
       <div class="mx-auto w-full max-w-[740px]">
         <a class="mb-8 inline-flex text-sm font-medium text-teal-700 hover:text-teal-900 dark:text-teal-300 dark:hover:text-teal-100" href={withBase("/blog")}>
@@ -30,13 +82,31 @@ const { post, headings, previous, next, relatedPosts = [] } = Astro.props;
             <a class="tag-pill" href={withBase(`/categories/${encodeURIComponent(post.data.category)}`)}>{post.data.category}</a>
             <span>发布于 {formatDate(post.data.date)}</span>
             {post.data.updatedDate && <span>更新于 {formatDate(post.data.updatedDate)}</span>}
-            <span>{getReadingTime(post.body)}</span>
+            <span>{reading.detail}</span>
           </div>
           <h1 class="text-4xl font-black leading-tight text-slate-950 sm:text-5xl dark:text-white">{post.data.title}</h1>
           <p class="mt-5 text-lg leading-8 text-slate-600 dark:text-slate-300">{post.data.description}</p>
           <div class="mt-6">
             <TagList tags={post.data.tags} />
           </div>
+          <div class="mt-6 flex justify-end">
+            <button
+              type="button"
+              class="rounded-full border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 transition hover:border-coral hover:text-coral dark:border-slate-700 dark:text-slate-300"
+              data-bookmark-url={postUrl}
+              aria-pressed="false"
+            >
+              稍后读
+            </button>
+          </div>
+          {post.data.cover && (
+            <img
+              class="mt-8 aspect-[16/9] w-full rounded-lg border border-slate-200 object-cover dark:border-slate-800"
+              src={withBase(post.data.cover)}
+              alt={post.data.title}
+              loading="eager"
+            />
+          )}
         </header>
         <div class="mb-8 lg:hidden">
           <TableOfContents headings={headings} compact />
@@ -44,6 +114,49 @@ const { post, headings, previous, next, relatedPosts = [] } = Astro.props;
         <div class="prose-blog">
           <slot />
         </div>
+        <ArticleActions title={post.data.title} url={absolutePostUrl} />
+        {post.data.series && seriesPosts.length > 0 && (
+          <section class="mt-14 border-t border-slate-200 pt-8 dark:border-slate-800">
+            <p class="text-sm font-semibold text-coral">Series</p>
+            <h2 class="mt-1 text-2xl font-black text-slate-950 dark:text-white">系列：{post.data.series}</h2>
+            <ol class="mt-5 space-y-3">
+              {seriesPosts.map((seriesPost, index) => {
+                const current = seriesPost.slug === post.slug;
+                return (
+                  <li>
+                    <a
+                      class={`flex items-start gap-3 rounded-lg border p-4 transition ${current ? "border-teal-400 bg-teal-50 text-teal-900 dark:border-teal-600 dark:bg-teal-950/30 dark:text-teal-100" : "border-slate-200 hover:border-teal-300 dark:border-slate-800"}`}
+                      href={withBase(`/blog/${seriesPost.slug}`)}
+                      aria-current={current ? "page" : undefined}
+                    >
+                      <span class="mt-0.5 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-950 text-sm font-black text-white dark:bg-white dark:text-slate-950">
+                        {seriesPost.data.seriesOrder ?? index + 1}
+                      </span>
+                      <span>
+                        <strong class="block text-slate-950 dark:text-white">{seriesPost.data.title}</strong>
+                        <span class="mt-1 block text-sm text-slate-500 dark:text-slate-400">{formatDate(seriesPost.data.date)}</span>
+                      </span>
+                    </a>
+                  </li>
+                );
+              })}
+            </ol>
+            {(seriesPrevious || seriesNext) && (
+              <div class="mt-5 grid gap-3 sm:grid-cols-2">
+                {seriesPrevious ? (
+                  <a class="rounded-lg border border-slate-200 p-4 text-sm font-semibold text-slate-700 transition hover:border-teal-300 hover:text-teal-700 dark:border-slate-800 dark:text-slate-200 dark:hover:text-teal-200" href={withBase(`/blog/${seriesPrevious.slug}`)}>
+                    上一篇：{seriesPrevious.data.title}
+                  </a>
+                ) : <span />}
+                {seriesNext && (
+                  <a class="rounded-lg border border-slate-200 p-4 text-right text-sm font-semibold text-slate-700 transition hover:border-teal-300 hover:text-teal-700 dark:border-slate-800 dark:text-slate-200 dark:hover:text-teal-200" href={withBase(`/blog/${seriesNext.slug}`)}>
+                    下一篇：{seriesNext.data.title}
+                  </a>
+                )}
+              </div>
+            )}
+          </section>
+        )}
         <nav class="mt-14 grid gap-4 border-t border-slate-200 pt-8 sm:grid-cols-2 dark:border-slate-800" aria-label="上一篇和下一篇">
           {previous ? (
             <a class="surface rounded-lg p-5 transition hover:-translate-y-0.5 hover:border-teal-300" href={withBase(`/blog/${previous.slug}`)}>
@@ -60,6 +173,7 @@ const { post, headings, previous, next, relatedPosts = [] } = Astro.props;
             </a>
           )}
         </nav>
+        <Comments />
         {relatedPosts.length > 0 && (
           <section class="mt-14 border-t border-slate-200 pt-8 dark:border-slate-800">
             <div class="mb-5">
@@ -67,7 +181,7 @@ const { post, headings, previous, next, relatedPosts = [] } = Astro.props;
               <h2 class="mt-1 text-2xl font-black text-slate-950 dark:text-white">相关文章推荐</h2>
             </div>
             <div class="grid gap-4">
-              {relatedPosts.map((relatedPost) => <PostCard post={relatedPost} />)}
+              {relatedPosts.map((related) => <PostCard post={related.post} note={related.reason} />)}
             </div>
           </section>
         )}
@@ -77,4 +191,107 @@ const { post, headings, previous, next, relatedPosts = [] } = Astro.props;
       </div>
     </div>
   </article>
+
+  <script is:inline>
+    (() => {
+      const progress = document.getElementById("reading-progress");
+      const article = document.querySelector("[data-reading-root]");
+      if (!progress || !article) return;
+
+      const update = () => {
+        const rect = article.getBoundingClientRect();
+        const top = window.scrollY + rect.top;
+        const total = Math.max(1, article.scrollHeight - window.innerHeight);
+        const current = Math.min(Math.max(window.scrollY - top, 0), total);
+        progress.style.width = `${(current / total) * 100}%`;
+      };
+
+      update();
+      window.addEventListener("scroll", update, { passive: true });
+      window.addEventListener("resize", update);
+    })();
+
+    (() => {
+      document.querySelectorAll(".prose-blog pre").forEach((pre) => {
+        if (pre.parentElement?.classList.contains("code-block-shell")) return;
+        const code = pre.querySelector("code");
+        const languageClass = Array.from(code?.classList ?? []).find((className) => className.startsWith("language-"));
+        const language = languageClass ? languageClass.replace("language-", "") : "code";
+        const wrapper = document.createElement("div");
+        const toolbar = document.createElement("div");
+        const label = document.createElement("span");
+        const button = document.createElement("button");
+
+        wrapper.className = "code-block-shell";
+        toolbar.className = "code-block-toolbar";
+        label.className = "code-block-language";
+        button.className = "code-copy-button";
+        label.textContent = language;
+        button.type = "button";
+        button.textContent = "复制";
+        button.setAttribute("aria-label", "复制代码");
+
+        button.addEventListener("click", async () => {
+          const text = code?.textContent ?? pre.textContent ?? "";
+          try {
+            await navigator.clipboard.writeText(text);
+            button.textContent = "已复制";
+            window.setTimeout(() => {
+              button.textContent = "复制";
+            }, 1600);
+          } catch {
+            button.textContent = "复制失败";
+            window.setTimeout(() => {
+              button.textContent = "复制";
+            }, 1600);
+          }
+        });
+
+        pre.parentNode?.insertBefore(wrapper, pre);
+        wrapper.append(toolbar, pre);
+        toolbar.append(label, button);
+      });
+    })();
+
+    (() => {
+      const links = Array.from(document.querySelectorAll("[data-toc-link]"));
+      const ids = Array.from(new Set(links.map((link) => link.getAttribute("data-toc-link")).filter(Boolean)));
+      const headings = ids
+        .map((id) => document.getElementById(id))
+        .filter(Boolean);
+      if (links.length === 0 || headings.length === 0) return;
+
+      const setActive = (id) => {
+        links.forEach((link) => {
+          const active = link.getAttribute("data-toc-link") === id;
+          link.classList.toggle("toc-link-active", active);
+          if (active) link.setAttribute("aria-current", "true");
+          else link.removeAttribute("aria-current");
+        });
+      };
+
+      const pickByScroll = () => {
+        const active = headings
+          .filter((heading) => heading.getBoundingClientRect().top <= 140)
+          .at(-1) ?? headings[0];
+        setActive(active.id);
+      };
+
+      if ("IntersectionObserver" in window) {
+        const observer = new IntersectionObserver(
+          (entries) => {
+            const visible = entries
+              .filter((entry) => entry.isIntersecting)
+              .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)[0];
+            if (visible?.target.id) setActive(visible.target.id);
+          },
+          { rootMargin: "-20% 0px -65% 0px", threshold: 0.01 }
+        );
+        headings.forEach((heading) => observer.observe(heading));
+      }
+
+      pickByScroll();
+      window.addEventListener("scroll", pickByScroll, { passive: true });
+    })();
+  </script>
 </BaseLayout>

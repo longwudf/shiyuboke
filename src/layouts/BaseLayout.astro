@@ -1,6 +1,8 @@
 ---
 import Header from "@/components/Header.astro";
 import Footer from "@/components/Footer.astro";
+import Analytics from "@/components/Analytics.astro";
+import { ClientRouter } from "astro:transitions";
 import { withBase } from "@/utils/url";
 import "@/styles/global.css";
 
@@ -8,15 +10,37 @@ interface Props {
   title: string;
   description: string;
   image?: string;
+  type?: "website" | "article";
+  publishedDate?: Date;
+  updatedDate?: Date;
+  tags?: string[];
+  jsonLd?: Record<string, unknown> | Record<string, unknown>[];
 }
 
 const {
   title,
   description,
-  image = "/favicon.svg"
+  image = "/favicon.svg",
+  type = "website",
+  publishedDate,
+  updatedDate,
+  tags = [],
+  jsonLd
 } = Astro.props;
 
-const canonical = new URL(Astro.url.pathname, Astro.site);
+const ensureBasePath = (pathname: string) => {
+  const base = import.meta.env.BASE_URL.replace(/\/$/, "");
+  if (base && base !== "/" && pathname.startsWith(base)) return pathname;
+  return withBase(pathname);
+};
+const getAbsoluteUrl = (value: string) =>
+  value.startsWith("http://") || value.startsWith("https://")
+    ? value
+    : new URL(withBase(value), Astro.site).toString();
+
+const canonical = new URL(ensureBasePath(Astro.url.pathname), Astro.site);
+const imageUrl = getAbsoluteUrl(image);
+const jsonLdItems = Array.isArray(jsonLd) ? jsonLd : jsonLd ? [jsonLd] : [];
 ---
 
 <!doctype html>
@@ -31,10 +55,19 @@ const canonical = new URL(Astro.url.pathname, Astro.site);
     <meta name="description" content={description} />
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
-    <meta property="og:type" content="website" />
+    <meta property="og:type" content={type} />
     <meta property="og:url" content={canonical} />
-    <meta property="og:image" content={new URL(withBase(image), Astro.site)} />
+    <meta property="og:image" content={imageUrl} />
     <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:image" content={imageUrl} />
+    {type === "article" && publishedDate && <meta property="article:published_time" content={publishedDate.toISOString()} />}
+    {type === "article" && updatedDate && <meta property="article:modified_time" content={updatedDate.toISOString()} />}
+    {type === "article" && tags.map((tag) => <meta property="article:tag" content={tag} />)}
+    {jsonLdItems.map((item) => (
+      <script is:inline type="application/ld+json" set:html={JSON.stringify(item).replace(/</g, "\\u003c")} />
+    ))}
+    <Analytics />
+    <ClientRouter />
     <script is:inline>
       (() => {
         const theme = localStorage.getItem("theme");
@@ -47,9 +80,53 @@ const canonical = new URL(Astro.url.pathname, Astro.site);
   </head>
   <body>
     <Header />
-    <main>
+    <main data-page-shell>
       <slot />
     </main>
     <Footer />
+    <script is:inline>
+      (() => {
+        const key = "shiyu.blog.bookmarks";
+        const legacyKey = ["long" + "wu", "dev", "bookmarks"].join(".");
+        const getBookmarks = () => {
+          try {
+            return JSON.parse(localStorage.getItem(key) || "[]");
+          } catch {
+            return [];
+          }
+        };
+        const setBookmarks = (items) => localStorage.setItem(key, JSON.stringify(items));
+        if (!localStorage.getItem(key) && localStorage.getItem(legacyKey)) {
+          localStorage.setItem(key, localStorage.getItem(legacyKey) || "[]");
+        }
+        const syncButtons = (notify = false) => {
+          const bookmarks = new Set(getBookmarks());
+          document.querySelectorAll("[data-bookmark-url]").forEach((button) => {
+            const url = button.getAttribute("data-bookmark-url");
+            const active = Boolean(url && bookmarks.has(url));
+            button.setAttribute("aria-pressed", String(active));
+            button.textContent = active ? "已收藏" : "稍后读";
+          });
+          if (notify) window.dispatchEvent(new CustomEvent("shiyu:bookmarks", { detail: Array.from(bookmarks) }));
+        };
+
+        document.addEventListener("click", (event) => {
+          const button = event.target instanceof Element
+            ? event.target.closest("[data-bookmark-url]")
+            : null;
+          if (!(button instanceof HTMLButtonElement)) return;
+          const url = button.getAttribute("data-bookmark-url");
+          if (!url) return;
+          const bookmarks = new Set(getBookmarks());
+          if (bookmarks.has(url)) bookmarks.delete(url);
+          else bookmarks.add(url);
+          setBookmarks(Array.from(bookmarks));
+          syncButtons(true);
+        });
+
+        window.ShiyuBookmarks = { get: getBookmarks, sync: () => syncButtons(false) };
+        syncButtons();
+      })();
+    </script>
   </body>
 </html>

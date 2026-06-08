@@ -1,24 +1,36 @@
 ---
 import { getCollection } from "astro:content";
+import { brand } from "@/data/site";
 import BaseLayout from "@/layouts/BaseLayout.astro";
 import PostCard from "@/components/PostCard.astro";
 import { filterPublished, sortPosts, uniqueValues } from "@/utils/posts";
 import { withBase } from "@/utils/url";
 
 const posts = sortPosts(filterPublished(await getCollection("blog")));
+const pageSize = 6;
+const totalPages = Math.max(1, Math.ceil(posts.length / pageSize));
+const pagedPosts = posts.slice(0, pageSize);
 const tags = uniqueValues(posts.flatMap((post) => post.data.tags));
 const categories = uniqueValues(posts.map((post) => post.data.category));
 ---
 
-<BaseLayout title="文章 | Longwu.dev" description="按时间倒序浏览全部技术文章。">
+<BaseLayout title={`文章 | ${brand.name}`} description="按时间倒序浏览全部技术文章。">
   <section class="content-grid py-12">
     <div class="mb-10 max-w-2xl">
       <h1 class="text-4xl font-black text-slate-950 dark:text-white">文章</h1>
-      <p class="mt-4 text-lg leading-8 text-slate-600 dark:text-slate-300">所有已发布内容按日期倒序排列，草稿会在构建时自动过滤。</p>
+      <p class="mt-4 text-lg leading-8 text-slate-600 dark:text-slate-300">所有已发布内容按日期倒序排列，覆盖安全、浏览器、SRE 和 AI 工程。</p>
     </div>
     <div class="grid gap-8 lg:grid-cols-[minmax(0,1fr)_260px]">
       <div class="grid gap-5">
-        {posts.map((post) => <PostCard post={post} />)}
+        {pagedPosts.map((post) => <PostCard post={post} />)}
+        {totalPages > 1 && (
+          <nav class="mt-4 flex items-center justify-between border-t border-slate-200 pt-6 text-sm font-semibold dark:border-slate-800" aria-label="文章分页">
+            <span class="text-slate-500 dark:text-slate-400">第 1 / {totalPages} 页</span>
+            <a class="rounded-full border border-slate-300 px-4 py-2 text-slate-700 transition hover:border-teal-400 hover:text-teal-700 dark:border-slate-700 dark:text-slate-200 dark:hover:text-teal-200" href={withBase("/blog/page/2")}>
+              下一页
+            </a>
+          </nav>
+        )}
       </div>
       <aside class="space-y-6">
         <div class="surface rounded-lg p-5">

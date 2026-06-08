@@ -1,9 +1,10 @@
 ---
+import { brand } from "@/data/site";
 import BaseLayout from "@/layouts/BaseLayout.astro";
 import { withBase } from "@/utils/url";
 ---
 
-<BaseLayout title="页面未找到 | Longwu.dev" description="请求的页面不存在。">
+<BaseLayout title={`页面未找到 | ${brand.name}`} description="请求的页面不存在。">
   <section class="content-grid flex min-h-[60vh] items-center py-12">
     <div class="max-w-xl">
       <p class="text-sm font-semibold text-teal-700 dark:text-teal-300">404</p>

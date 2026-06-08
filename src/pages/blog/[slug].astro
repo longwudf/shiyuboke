@@ -6,37 +6,73 @@ import { filterPublished, sortPosts } from "@/utils/posts";
 export async function getStaticPaths() {
   const posts = sortPosts(filterPublished(await getCollection("blog")));
 
-  return posts.map((post, index) => ({
-    params: { slug: post.slug },
-    props: {
-      post,
-      previous: posts[index + 1],
-      next: posts[index - 1],
-      relatedPosts: [
-        ...posts
-        .filter((candidate) => candidate.slug !== post.slug)
-        .map((candidate) => {
-          const sharedTags = candidate.data.tags.filter((tag) => post.data.tags.includes(tag)).length;
-          const sameCategory = candidate.data.category === post.data.category ? 2 : 0;
-          return { post: candidate, score: sharedTags + sameCategory };
-        })
-        .filter((item) => item.score > 0)
-        .sort((a, b) => b.score - a.score || b.post.data.date.valueOf() - a.post.data.date.valueOf())
-        .map((item) => item.post),
-        ...posts.filter((candidate) => candidate.slug !== post.slug)
-      ]
-        .filter((candidate, candidateIndex, candidates) =>
-          candidates.findIndex((item) => item.slug === candidate.slug) === candidateIndex
-        )
-        .slice(0, 3)
-    }
-  }));
+  return posts.map((post, index) => {
+    const seriesPosts = post.data.series
+      ? posts
+          .filter((candidate) => candidate.data.series === post.data.series)
+          .sort((a, b) =>
+            (a.data.seriesOrder ?? Number.MAX_SAFE_INTEGER) - (b.data.seriesOrder ?? Number.MAX_SAFE_INTEGER) ||
+            a.data.date.valueOf() - b.data.date.valueOf()
+          )
+      : [];
+    const seriesIndex = seriesPosts.findIndex((candidate) => candidate.slug === post.slug);
+
+    const relatedPosts = posts
+      .filter((candidate) => candidate.slug !== post.slug)
+      .map((candidate) => {
+        const sharedTags = candidate.data.tags.filter((tag) => post.data.tags.includes(tag));
+        const sameSeries = Boolean(post.data.series && candidate.data.series === post.data.series);
+        const sameCategory = candidate.data.category === post.data.category;
+        const reasons = [
+          sameSeries ? `同属「${post.data.series}」系列` : "",
+          sameCategory ? `同属 ${post.data.category} 分类` : "",
+          sharedTags.length > 0 ? `共享 ${sharedTags.slice(0, 2).join("、")} 标签` : "",
+          candidate.data.featured ? "精选文章" : ""
+        ].filter(Boolean);
+        const score =
+          (sameSeries ? 8 : 0) +
+          (sameCategory ? 3 : 0) +
+          sharedTags.length * 2 +
+          (candidate.data.featured ? 1 : 0);
+
+        return {
+          post: candidate,
+          score,
+          reason: reasons[0] || "最近更新"
+        };
+      })
+      .sort((a, b) => b.score - a.score || b.post.data.date.valueOf() - a.post.data.date.valueOf())
+      .slice(0, 1)
+      .map(({ post, reason }) => ({ post, reason }));
+
+    return {
+      params: { slug: post.slug },
+      props: {
+        post,
+        previous: posts[index + 1],
+        next: posts[index - 1],
+        relatedPosts,
+        seriesPosts,
+        seriesPrevious: seriesIndex > 0 ? seriesPosts[seriesIndex - 1] : undefined,
+        seriesNext: seriesIndex >= 0 ? seriesPosts[seriesIndex + 1] : undefined
+      }
+    };
+  });
 }
 
-const { post, previous, next, relatedPosts } = Astro.props;
+const { post, previous, next, relatedPosts, seriesPosts, seriesPrevious, seriesNext } = Astro.props;
 const { Content, headings } = await render(post);
 ---
 
-<BlogLayout post={post} headings={headings} previous={previous} next={next} relatedPosts={relatedPosts}>
+<BlogLayout
+  post={post}
+  headings={headings}
+  previous={previous}
+  next={next}
+  relatedPosts={relatedPosts}
+  seriesPosts={seriesPosts}
+  seriesPrevious={seriesPrevious}
+  seriesNext={seriesNext}
+>
   <Content />
 </BlogLayout>
