@@ -26,6 +26,27 @@ const contentFiles = {
   now: path.join(root, "src", "data", "now.json")
 } as const;
 
+const shiyuBlog = {
+  siteName: "诗余博客",
+  repository: "longwudf/shiyuboke",
+  repositoryUrl: "https://github.com/longwudf/shiyuboke",
+  remoteUrl: "https://github.com/longwudf/shiyuboke.git",
+  sshRemoteUrl: "git@github.com:longwudf/shiyuboke.git",
+  pagesUrl: "https://longwudf.github.io/shiyuboke/",
+  homepageUrl: "https://longwudf.github.io/shiyuboke/",
+  actionsUrl: "https://github.com/longwudf/shiyuboke/actions",
+  latestSuccessfulRunUrl: "https://github.com/longwudf/shiyuboke/actions/runs/27163867016",
+  defaultBranch: "main",
+  pagesStatus: "deployed",
+  discussionsEnabled: true,
+  giscus: {
+    repo: "longwudf/shiyuboke",
+    repoId: "R_kgDOShwURA",
+    category: "Announcements",
+    categoryId: "DIC_kwDOShwURM4C-xk0"
+  }
+} as const;
+
 type ContentKey = keyof typeof contentFiles;
 
 type PostPayload = {
@@ -137,6 +158,7 @@ const validatePost = (post: ReturnType<typeof normalizePost>) => {
 };
 
 const fileNameForPost = (post: ReturnType<typeof normalizePost>, existingId?: string) => {
+  if (existingId && !datePrefix(existingId)) return `${post.slug}${post.ext}`;
   const prefix = datePrefix(existingId ?? "") || post.date.slice(0, 10);
   return `${prefix}-${post.slug}${post.ext}`;
 };
@@ -222,6 +244,43 @@ const writeJsonContent = async (key: ContentKey, value: unknown) => {
   return readJsonContent(key);
 };
 
+const stringValue = (value: unknown, fallback: string) => (typeof value === "string" && value.trim() ? value.trim() : fallback);
+
+const getManagerContext = async () => {
+  try {
+    const site = await readJsonContent("site") as {
+      brand?: { name?: unknown };
+      deployment?: Record<string, unknown>;
+      comments?: { giscus?: Record<string, unknown> };
+    };
+    const deployment = site.deployment ?? {};
+    const giscus = site.comments?.giscus ?? {};
+
+    return {
+      siteName: stringValue(site.brand?.name, shiyuBlog.siteName),
+      repository: stringValue(deployment.repository, shiyuBlog.repository),
+      repositoryUrl: stringValue(deployment.repositoryUrl, shiyuBlog.repositoryUrl),
+      remoteUrl: stringValue(deployment.remoteUrl, shiyuBlog.remoteUrl),
+      sshRemoteUrl: stringValue(deployment.sshRemoteUrl, shiyuBlog.sshRemoteUrl),
+      pagesUrl: stringValue(deployment.pagesUrl, shiyuBlog.pagesUrl),
+      homepageUrl: stringValue(deployment.homepageUrl, shiyuBlog.homepageUrl),
+      actionsUrl: stringValue(deployment.actionsUrl, shiyuBlog.actionsUrl),
+      latestSuccessfulRunUrl: stringValue(deployment.latestSuccessfulRunUrl, shiyuBlog.latestSuccessfulRunUrl),
+      defaultBranch: stringValue(deployment.defaultBranch, shiyuBlog.defaultBranch),
+      pagesStatus: stringValue(deployment.pagesStatus, shiyuBlog.pagesStatus),
+      discussionsEnabled: typeof deployment.discussionsEnabled === "boolean" ? deployment.discussionsEnabled : shiyuBlog.discussionsEnabled,
+      giscus: {
+        repo: stringValue(giscus.repo, shiyuBlog.giscus.repo),
+        repoId: stringValue(giscus.repoId, shiyuBlog.giscus.repoId),
+        category: stringValue(giscus.category, shiyuBlog.giscus.category),
+        categoryId: stringValue(giscus.categoryId, shiyuBlog.giscus.categoryId)
+      }
+    };
+  } catch {
+    return shiyuBlog;
+  }
+};
+
 const resolveCommand = (command: string, args: string[]) => {
   if (command !== "npm") return { executable: command, args };
 
@@ -266,14 +325,28 @@ const isGitRepo = async () => {
   return result.ok && result.stdout.trim() === "true";
 };
 
+const normalizeRemote = (remote: string) =>
+  remote
+    .trim()
+    .replace(/^git@github\.com:/, "https://github.com/")
+    .replace(/\.git$/, "")
+    .replace(/\/$/, "");
+
+const remoteMatchesShiyuBlog = (remote: string, context: { remoteUrl: string; sshRemoteUrl: string }) =>
+  [context.remoteUrl, context.sshRemoteUrl].map(normalizeRemote).includes(normalizeRemote(remote));
+
 const getGitStatus = async () => {
+  const managerContext = await getManagerContext();
   const repo = await isGitRepo();
   if (!repo) {
     return {
       isRepo: false,
-      branch: "",
+      branch: managerContext.defaultBranch,
       remote: "",
       hasRemote: false,
+      expectedRemote: managerContext.remoteUrl,
+      sshRemote: managerContext.sshRemoteUrl,
+      remoteMatches: false,
       changes: [],
       clean: true,
       needsSetup: true
@@ -286,15 +359,19 @@ const getGitStatus = async () => {
     runCommandJson("git", ["status", "--porcelain"])
   ]);
   const changes = statusResult.stdout.split(/\r?\n/).filter(Boolean);
+  const remote = remoteResult.ok ? remoteResult.stdout.trim() : "";
 
   return {
     isRepo: true,
     branch: branchResult.ok ? branchResult.stdout.trim() : "",
-    remote: remoteResult.ok ? remoteResult.stdout.trim() : "",
-    hasRemote: remoteResult.ok && Boolean(remoteResult.stdout.trim()),
+    remote,
+    hasRemote: Boolean(remote),
+    expectedRemote: managerContext.remoteUrl,
+    sshRemote: managerContext.sshRemoteUrl,
+    remoteMatches: remoteMatchesShiyuBlog(remote, managerContext),
     changes,
     clean: changes.length === 0,
-    needsSetup: !remoteResult.ok || !remoteResult.stdout.trim()
+    needsSetup: !remote
   };
 };
 
@@ -464,6 +541,10 @@ app.post("/api/checks/:name", async (request, response) => {
   response.status(result.ok ? 200 : 500).json({ name, ...result });
 });
 
+app.get("/api/manager/context", async (_request, response) => {
+  response.json(await getManagerContext());
+});
+
 app.get("/api/git/status", async (_request, response) => {
   try {
     response.json(await getGitStatus());
@@ -474,8 +555,9 @@ app.get("/api/git/status", async (_request, response) => {
 
 app.post("/api/git/init", async (request, response) => {
   try {
-    const branch = String(request.body?.branch || "main").trim() || "main";
-    const remoteUrl = String(request.body?.remoteUrl || "").trim();
+    const managerContext = await getManagerContext();
+    const branch = String(request.body?.branch || managerContext.defaultBranch).trim() || managerContext.defaultBranch;
+    const remoteUrl = String(request.body?.remoteUrl || managerContext.remoteUrl).trim();
     if (!/^[A-Za-z0-9._/-]+$/.test(branch)) throw new Error("Invalid branch name");
     if (!remoteUrl) throw new Error("remoteUrl is required");
 
@@ -483,7 +565,7 @@ app.post("/api/git/init", async (request, response) => {
     await runCommand("git", ["branch", "-M", branch]);
     const remote = await runCommandJson("git", ["remote", "get-url", "origin"]);
     await runCommand("git", remote.ok ? ["remote", "set-url", "origin", remoteUrl] : ["remote", "add", "origin", remoteUrl]);
-    response.json({ message: "Git 仓库已初始化，remote 已设置。", status: await getGitStatus() });
+    response.json({ message: `Git 仓库已初始化，origin 已指向 ${managerContext.repository}。`, status: await getGitStatus() });
   } catch (error) {
     const err = error as Error & { stdout?: string; stderr?: string };
     response.status(400).json({ error: `${err.message}\n${err.stdout ?? ""}\n${err.stderr ?? ""}`.trim() });
@@ -514,13 +596,14 @@ app.post("/api/git/commit", async (request, response) => {
 
 app.post("/api/git/push", async (_request, response) => {
   try {
+    const managerContext = await getManagerContext();
     const status = await getGitStatus();
     if (!status.isRepo) throw new Error("当前目录还不是 Git 仓库，请先初始化。");
     if (!status.hasRemote) throw new Error("未设置 origin remote。");
-    const branch = status.branch || "main";
+    const branch = status.branch || managerContext.defaultBranch;
     const upstream = await runCommandJson("git", ["rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}"]);
     const push = await runCommand("git", upstream.ok ? ["push"] : ["push", "-u", "origin", branch]);
-    response.json({ message: "已推送到远程仓库。", output: push.output });
+    response.json({ message: "已推送到 GitHub。GitHub Actions 会继续构建并部署 GitHub Pages。", output: push.output });
   } catch (error) {
     const err = error as Error & { stdout?: string; stderr?: string };
     response.status(500).json({ error: `${err.message}\n${err.stdout ?? ""}\n${err.stderr ?? ""}`.trim() });

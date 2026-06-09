@@ -4,10 +4,21 @@
     "name": "安全动态观察",
     "summary": "面向补丁优先级和暴露面排查的安全信息整理。",
     "description": "围绕 CISA KEV、厂商公告、开源组件 advisory 和实际利用信号，记录哪些风险需要先处理、为什么需要先处理、以及如何把新闻转成工程动作。",
-    "stack": ["CISA KEV", "CVE", "Patch Management"],
-    "highlights": ["最新公告交叉验证", "补丁优先级判断", "资产暴露面排查"],
+    "stack": [
+      "CISA KEV",
+      "CVE",
+      "Patch Management"
+    ],
+    "highlights": [
+      "最新公告交叉验证",
+      "补丁优先级判断",
+      "资产暴露面排查"
+    ],
     "links": [
-      { "label": "阅读安全观察", "href": "/blog/2026-06-09-security-watch-june-2026" }
+      {
+        "label": "阅读安全观察",
+        "href": "/blog/2026-06-09-security-watch-june-2026"
+      }
     ]
   },
   {
@@ -15,12 +26,25 @@
     "name": "浏览器、SRE 与 AI 工程",
     "summary": "把复杂系统的边界、可靠性和 AI 落地方法拆成可复用笔记。",
     "description": "从浏览器隔离和渲染流水线，到错误预算、事故复盘，再到 AI 上下文工程，整理工程师在系统演进中需要反复做出的判断。",
-    "stack": ["Browser", "SRE", "AI Engineering"],
-    "highlights": ["浏览器安全与性能边界", "错误预算和事故复盘", "AI 工具调用与评测"],
+    "stack": [
+      "Browser",
+      "SRE",
+      "AI Engineering"
+    ],
+    "highlights": [
+      "浏览器安全与性能边界",
+      "错误预算和事故复盘",
+      "AI 工具调用与评测"
+    ],
     "links": [
-      { "label": "浏览器文章", "href": "/blog/browser-isolation-rendering-pipeline" },
-      { "label": "SRE 文章", "href": "/blog/sre-error-budget-incident-review" },
-      { "label": "AI 文章", "href": "/blog/ai-agent-context-engineering" }
+      {
+        "label": "SRE 文章",
+        "href": "/blog/sre-error-budget-incident-review"
+      },
+      {
+        "label": "AI 文章",
+        "href": "/blog/ai-agent-context-engineering"
+      }
     ]
   }
 ]

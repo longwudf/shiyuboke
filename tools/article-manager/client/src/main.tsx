@@ -5,6 +5,7 @@ import {
   ArrowUp,
   BookOpen,
   CheckCircle2,
+  ExternalLink,
   FileText,
   FolderKanban,
   GitBranch,
@@ -55,6 +56,37 @@ type LinkItem = {
   variant?: string;
 };
 
+type DeploymentConfig = {
+  repository: string;
+  repositoryUrl: string;
+  remoteUrl: string;
+  sshRemoteUrl: string;
+  pagesUrl: string;
+  homepageUrl: string;
+  actionsUrl: string;
+  latestSuccessfulRunUrl: string;
+  defaultBranch: string;
+  pagesStatus: string;
+  discussionsEnabled: boolean;
+};
+
+type CommentsConfig = {
+  provider: "giscus";
+  enabled: boolean;
+  giscus: {
+    repo: string;
+    repoId: string;
+    category: string;
+    categoryId: string;
+    mapping: string;
+    strict: string;
+    reactionsEnabled: string;
+    inputPosition: string;
+    theme: string;
+    lang: string;
+  };
+};
+
 type SiteContent = {
   brand: {
     name: string;
@@ -67,6 +99,8 @@ type SiteContent = {
     profileUrl: string;
     avatar: string;
   };
+  deployment: DeploymentConfig;
+  comments: CommentsConfig;
   navigation: LinkItem[];
   footerLinks: LinkItem[];
   home: {
@@ -152,9 +186,33 @@ type GitStatus = {
   branch: string;
   remote: string;
   hasRemote: boolean;
+  expectedRemote: string;
+  sshRemote: string;
+  remoteMatches: boolean;
   changes: string[];
   clean: boolean;
   needsSetup: boolean;
+};
+
+type ManagerContext = {
+  siteName: string;
+  repository: string;
+  repositoryUrl: string;
+  remoteUrl: string;
+  sshRemoteUrl: string;
+  pagesUrl: string;
+  homepageUrl: string;
+  actionsUrl: string;
+  latestSuccessfulRunUrl: string;
+  defaultBranch: string;
+  pagesStatus: string;
+  discussionsEnabled: boolean;
+  giscus: {
+    repo: string;
+    repoId: string;
+    category: string;
+    categoryId: string;
+  };
 };
 
 type ImageAsset = {
@@ -288,6 +346,15 @@ function IconButton({
   );
 }
 
+function ExternalLinkButton({ href, children }: { href: string; children: React.ReactNode }) {
+  return (
+    <a className="link-button" href={href} target="_blank" rel="noreferrer">
+      {children}
+      <ExternalLink size={15} />
+    </a>
+  );
+}
+
 function ArrayEditor<T>({
   title,
   items,
@@ -344,11 +411,12 @@ function App() {
   const [message, setMessage] = useState("");
   const [dark, setDark] = useState(() => localStorage.getItem("manager-theme") === "dark");
   const [preview, setPreview] = useState(true);
+  const [managerContext, setManagerContext] = useState<ManagerContext | null>(null);
   const [gitStatus, setGitStatus] = useState<GitStatus | null>(null);
   const [checks, setChecks] = useState<CheckState>({});
-  const [remoteUrl, setRemoteUrl] = useState("");
+  const [remoteUrl, setRemoteUrl] = useState("https://github.com/longwudf/shiyuboke.git");
   const [branch, setBranch] = useState("main");
-  const [commitMessage, setCommitMessage] = useState("Update site content");
+  const [commitMessage, setCommitMessage] = useState("Update shiyuboke content");
   const [firstCommit, setFirstCommit] = useState(false);
   const [busy, setBusy] = useState(false);
 
@@ -380,6 +448,13 @@ function App() {
     setImages(data.images);
   };
 
+  const loadManagerContext = async () => {
+    const context = await api<ManagerContext>("/api/manager/context");
+    setManagerContext(context);
+    setRemoteUrl((current) => current || context.remoteUrl);
+    setBranch((current) => current || context.defaultBranch);
+  };
+
   const loadGitStatus = async () => {
     const status = await api<GitStatus>("/api/git/status");
     setGitStatus(status);
@@ -389,7 +464,7 @@ function App() {
   };
 
   const refreshAll = async () => {
-    await Promise.all([loadPosts(), loadContent(), loadImages(), loadGitStatus()]);
+    await Promise.all([loadPosts(), loadContent(), loadImages(), loadManagerContext(), loadGitStatus()]);
   };
 
   useEffect(() => {
@@ -566,36 +641,65 @@ function App() {
     }
   };
 
-  const renderDashboard = () => (
-    <div className="page-grid">
-      <section className="hero-panel">
-        <div>
-          <p className="eyebrow">Local CMS</p>
-          <h2>{content.site?.brand.name ?? "博客管理"}</h2>
-          <p>{content.site?.brand.description ?? "正在加载站点资料。"}</p>
-        </div>
-        <button type="button" onClick={refreshAll}>
-          <RefreshCcw size={16} />刷新
-        </button>
-      </section>
-      <div className="metric-grid">
-        <div className="metric"><span>文章</span><strong>{posts.length}</strong></div>
-        <div className="metric"><span>草稿</span><strong>{draftCount}</strong></div>
-        <div className="metric"><span>已发布</span><strong>{publishedCount}</strong></div>
-        <div className="metric"><span>精选</span><strong>{featuredCount}</strong></div>
-        <div className="metric"><span>分类</span><strong>{categories.length}</strong></div>
-        <div className="metric"><span>标签</span><strong>{tags.length}</strong></div>
-      </div>
-      <div className="two-col">
-        <section className="panel">
-          <h3>最近状态</h3>
-          <dl className="status-list">
-            <div><dt>最近更新</dt><dd>{latestUpdate || "暂无"}</dd></div>
-            <div><dt>Git 仓库</dt><dd>{gitStatus?.isRepo ? `已初始化 · ${gitStatus.branch || "未知分支"}` : "未初始化"}</dd></div>
-            <div><dt>Remote</dt><dd>{gitStatus?.remote || "未设置"}</dd></div>
-            <div><dt>工作区</dt><dd>{gitStatus?.clean ? "干净" : `${gitStatus?.changes.length ?? 0} 个变更`}</dd></div>
-          </dl>
+  const renderDashboard = () => {
+    const pagesUrl = managerContext?.pagesUrl ?? content.site?.deployment.pagesUrl ?? "";
+    const homepageUrl = managerContext?.homepageUrl ?? content.site?.deployment.homepageUrl ?? "";
+    const repositoryUrl = managerContext?.repositoryUrl ?? content.site?.deployment.repositoryUrl ?? "";
+    const actionsUrl = managerContext?.actionsUrl ?? content.site?.deployment.actionsUrl ?? "";
+    const latestRunUrl = managerContext?.latestSuccessfulRunUrl ?? content.site?.deployment.latestSuccessfulRunUrl ?? "";
+    const repository = managerContext?.repository ?? content.site?.deployment.repository ?? "longwudf/shiyuboke";
+    const giscus = managerContext?.giscus ?? content.site?.comments.giscus;
+    const discussionsEnabled = managerContext?.discussionsEnabled ?? content.site?.deployment.discussionsEnabled ?? false;
+
+    return (
+      <div className="page-grid">
+        <section className="hero-panel">
+          <div>
+            <p className="eyebrow">诗余博客本地管理器</p>
+            <h2>{content.site?.brand.name ?? "诗余博客"}</h2>
+            <p>{content.site?.brand.description ?? "正在加载站点资料。"}</p>
+            <div className="link-row">
+              {pagesUrl && <ExternalLinkButton href={pagesUrl}>线上站点</ExternalLinkButton>}
+              {homepageUrl && <ExternalLinkButton href={homepageUrl}>仓库主页</ExternalLinkButton>}
+              {repositoryUrl && <ExternalLinkButton href={repositoryUrl}>GitHub 仓库</ExternalLinkButton>}
+              {latestRunUrl && <ExternalLinkButton href={latestRunUrl}>最近成功部署</ExternalLinkButton>}
+            </div>
+          </div>
+          <button type="button" onClick={refreshAll}>
+            <RefreshCcw size={16} />刷新
+          </button>
         </section>
+        <div className="metric-grid">
+          <div className="metric"><span>文章</span><strong>{posts.length}</strong></div>
+          <div className="metric"><span>草稿</span><strong>{draftCount}</strong></div>
+          <div className="metric"><span>已发布</span><strong>{publishedCount}</strong></div>
+          <div className="metric"><span>精选</span><strong>{featuredCount}</strong></div>
+          <div className="metric"><span>分类</span><strong>{categories.length}</strong></div>
+          <div className="metric"><span>标签</span><strong>{tags.length}</strong></div>
+        </div>
+        <div className="two-col">
+          <section className="panel">
+            <h3>本地状态</h3>
+            <dl className="status-list">
+              <div><dt>最近更新</dt><dd>{latestUpdate || "暂无"}</dd></div>
+              <div><dt>Git 仓库</dt><dd>{gitStatus?.isRepo ? `已初始化 · ${gitStatus.branch || "未知分支"}` : "未初始化"}</dd></div>
+              <div><dt>Remote</dt><dd>{gitStatus?.remote || "未设置"}</dd></div>
+              <div><dt>目标仓库</dt><dd>{gitStatus?.remoteMatches ? "已指向诗余博客" : `应为 ${gitStatus?.expectedRemote ?? "诗余博客仓库"}`}</dd></div>
+              <div><dt>工作区</dt><dd>{gitStatus?.clean ? "干净" : `${gitStatus?.changes.length ?? 0} 个变更`}</dd></div>
+            </dl>
+          </section>
+          <section className="panel">
+            <h3>线上目标</h3>
+            <dl className="status-list">
+              <div><dt>仓库</dt><dd>{repository}</dd></div>
+              <div><dt>仓库主页</dt><dd>{homepageUrl || "未配置"}</dd></div>
+              <div><dt>Pages</dt><dd>{pagesUrl ? "已部署并可访问" : "未配置"}</dd></div>
+              <div><dt>Actions</dt><dd>{actionsUrl ? "已连接发布流水线" : "未配置"}</dd></div>
+              <div><dt>Discussions</dt><dd>{discussionsEnabled ? "已开启" : "未开启"}</dd></div>
+              <div><dt>Giscus</dt><dd>{giscus ? `${giscus.category} · ${giscus.repoId}` : "未配置"}</dd></div>
+            </dl>
+          </section>
+        </div>
         <section className="panel">
           <h3>快捷操作</h3>
           <div className="button-grid">
@@ -605,8 +709,8 @@ function App() {
           </div>
         </section>
       </div>
-    </div>
-  );
+    );
+  };
 
   const renderPosts = () => (
     <div className="content-layout">
@@ -857,6 +961,34 @@ function App() {
           </div>
           <TextField label="首页标题" rows={2} value={site.home.headline} onChange={(value) => setContentKey("site", { ...site, home: { ...site.home, headline: value } })} />
           <TextField label="首页导语" rows={2} value={site.home.intro} onChange={(value) => setContentKey("site", { ...site, home: { ...site.home, intro: value } })} />
+          <section className="section-block">
+            <h3>发布与评论</h3>
+            <div className="field-grid">
+              <TextField label="GitHub 仓库" value={site.deployment.repository} onChange={(value) => setContentKey("site", { ...site, deployment: { ...site.deployment, repository: value } })} />
+              <TextField label="仓库地址" value={site.deployment.repositoryUrl} onChange={(value) => setContentKey("site", { ...site, deployment: { ...site.deployment, repositoryUrl: value } })} />
+              <TextField label="HTTPS Remote" value={site.deployment.remoteUrl} onChange={(value) => setContentKey("site", { ...site, deployment: { ...site.deployment, remoteUrl: value } })} />
+              <TextField label="SSH Remote" value={site.deployment.sshRemoteUrl} onChange={(value) => setContentKey("site", { ...site, deployment: { ...site.deployment, sshRemoteUrl: value } })} />
+              <TextField label="Pages 地址" value={site.deployment.pagesUrl} onChange={(value) => setContentKey("site", { ...site, deployment: { ...site.deployment, pagesUrl: value } })} />
+              <TextField label="仓库主页" value={site.deployment.homepageUrl} onChange={(value) => setContentKey("site", { ...site, deployment: { ...site.deployment, homepageUrl: value } })} />
+              <TextField label="Actions 地址" value={site.deployment.actionsUrl} onChange={(value) => setContentKey("site", { ...site, deployment: { ...site.deployment, actionsUrl: value } })} />
+              <TextField label="最近成功 Run" value={site.deployment.latestSuccessfulRunUrl} onChange={(value) => setContentKey("site", { ...site, deployment: { ...site.deployment, latestSuccessfulRunUrl: value } })} />
+              <TextField label="默认分支" value={site.deployment.defaultBranch} onChange={(value) => setContentKey("site", { ...site, deployment: { ...site.deployment, defaultBranch: value } })} />
+            </div>
+            <label className="field inline-field">
+              <span>Discussions 已开启</span>
+              <input type="checkbox" checked={site.deployment.discussionsEnabled} onChange={(event) => setContentKey("site", { ...site, deployment: { ...site.deployment, discussionsEnabled: event.target.checked } })} />
+            </label>
+            <label className="field inline-field">
+              <span>启用 Giscus</span>
+              <input type="checkbox" checked={site.comments.enabled} onChange={(event) => setContentKey("site", { ...site, comments: { ...site.comments, enabled: event.target.checked } })} />
+            </label>
+            <div className="field-grid">
+              <TextField label="Giscus repo" value={site.comments.giscus.repo} onChange={(value) => setContentKey("site", { ...site, comments: { ...site.comments, giscus: { ...site.comments.giscus, repo: value } } })} />
+              <TextField label="Giscus repoId" value={site.comments.giscus.repoId} onChange={(value) => setContentKey("site", { ...site, comments: { ...site.comments, giscus: { ...site.comments.giscus, repoId: value } } })} />
+              <TextField label="Giscus category" value={site.comments.giscus.category} onChange={(value) => setContentKey("site", { ...site, comments: { ...site.comments, giscus: { ...site.comments.giscus, category: value } } })} />
+              <TextField label="Giscus categoryId" value={site.comments.giscus.categoryId} onChange={(value) => setContentKey("site", { ...site, comments: { ...site.comments, giscus: { ...site.comments.giscus, categoryId: value } } })} />
+            </div>
+          </section>
           <ArrayEditor
             title="主导航"
             items={site.navigation}
@@ -1037,20 +1169,64 @@ function App() {
       { id: "astro", label: "Astro 检查" },
       { id: "build", label: "构建部署产物" }
     ];
+    const pagesUrl = managerContext?.pagesUrl ?? content.site?.deployment.pagesUrl ?? "";
+    const homepageUrl = managerContext?.homepageUrl ?? content.site?.deployment.homepageUrl ?? "";
+    const repositoryUrl = managerContext?.repositoryUrl ?? content.site?.deployment.repositoryUrl ?? "";
+    const actionsUrl = managerContext?.actionsUrl ?? content.site?.deployment.actionsUrl ?? "";
+    const latestRunUrl = managerContext?.latestSuccessfulRunUrl ?? content.site?.deployment.latestSuccessfulRunUrl ?? "";
+    const repository = managerContext?.repository ?? content.site?.deployment.repository ?? "longwudf/shiyuboke";
+    const defaultRemote = managerContext?.remoteUrl ?? content.site?.deployment.remoteUrl ?? "https://github.com/longwudf/shiyuboke.git";
+    const sshRemote = managerContext?.sshRemoteUrl ?? content.site?.deployment.sshRemoteUrl ?? "git@github.com:longwudf/shiyuboke.git";
+    const giscus = managerContext?.giscus ?? content.site?.comments.giscus;
     return (
       <div className="page-grid">
         <section className="panel wide">
           <div className="panel-head">
             <div>
+              <p className="eyebrow">GitHub Pages</p>
+              <h2>诗余博客发布目标</h2>
+            </div>
+            <div className="link-row compact">
+              {pagesUrl && <ExternalLinkButton href={pagesUrl}>线上站点</ExternalLinkButton>}
+              {homepageUrl && <ExternalLinkButton href={homepageUrl}>仓库主页</ExternalLinkButton>}
+              {repositoryUrl && <ExternalLinkButton href={repositoryUrl}>仓库</ExternalLinkButton>}
+              {actionsUrl && <ExternalLinkButton href={actionsUrl}>Actions</ExternalLinkButton>}
+            </div>
+          </div>
+          <div className="target-grid">
+            <article>
+              <span>Pages</span>
+              <strong>已部署</strong>
+              <small>{pagesUrl ? `${pagesUrl} · 仓库主页 ${homepageUrl || "未记录"}` : "未配置 Pages 地址"}</small>
+            </article>
+            <article>
+              <span>GitHub Actions</span>
+              <strong>最近部署成功</strong>
+              <small>{latestRunUrl || "未记录 run 地址"}</small>
+            </article>
+            <article>
+              <span>Discussions / Giscus</span>
+              <strong>{giscus ? "评论已接入" : "未配置"}</strong>
+              <small>{giscus ? `${giscus.repo} · ${giscus.category}` : "需要配置 Giscus"}</small>
+            </article>
+          </div>
+        </section>
+        <section className="panel wide">
+          <div className="panel-head">
+            <div>
               <p className="eyebrow">Git</p>
-              <h2>仓库设置</h2>
+              <h2>本地仓库设置</h2>
             </div>
             <button type="button" onClick={loadGitStatus}><RefreshCcw size={16} />刷新状态</button>
           </div>
+          <p className="hint">
+            本管理器专门推送到 {repository}。HTTPS remote 默认为 {defaultRemote}，也接受 SSH remote：{sshRemote}。
+          </p>
           <div className="status-strip">
             <span>{gitStatus?.isRepo ? "已初始化" : "未初始化"}</span>
             <span>{gitStatus?.branch || "无分支"}</span>
             <span>{gitStatus?.remote || "未设置 remote"}</span>
+            <span>{gitStatus?.remoteMatches ? "目标仓库正确" : "需要指向诗余博客"}</span>
             <span>{gitStatus?.clean ? "工作区干净" : `${gitStatus?.changes.length ?? 0} 个变更`}</span>
           </div>
           {(!gitStatus?.isRepo || gitStatus.needsSetup) && (

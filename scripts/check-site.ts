@@ -6,12 +6,25 @@ const root = process.cwd();
 const distDir = path.join(root, "dist");
 const blogDir = path.join(root, "src", "content", "blog");
 const projectsFile = path.join(root, "src", "data", "projects.json");
+const siteFile = path.join(root, "src", "data", "site.json");
 
 type Project = {
   slug?: unknown;
   links?: Array<{
     href?: unknown;
   }>;
+};
+
+type SiteConfig = {
+  comments?: {
+    enabled?: boolean;
+    giscus?: {
+      repo?: string;
+      repoId?: string;
+      category?: string;
+      categoryId?: string;
+    };
+  };
 };
 
 const exists = async (filePath: string) => {
@@ -72,6 +85,8 @@ const main = async () => {
 
   const projectsRaw = await fs.readFile(projectsFile, "utf8");
   const projects = JSON.parse(projectsRaw) as Project[];
+  const siteRaw = await fs.readFile(siteFile, "utf8");
+  const site = JSON.parse(siteRaw) as SiteConfig;
   for (const project of projects) {
     if (typeof project.slug !== "string" || !project.slug.trim()) {
       errors.push("project entry missing slug");
@@ -97,6 +112,28 @@ const main = async () => {
 
   for (const cover of covers) {
     await assertExists(path.join(distDir, cover.replace(/^\/+/, "")), `cover image ${cover}`, errors);
+  }
+
+  const giscus = site.comments?.giscus;
+  if (site.comments?.enabled !== false && giscus) {
+    const requiredGiscusSnippets = [
+      "https://giscus.app/client.js",
+      `data-repo="${giscus.repo}"`,
+      `data-repo-id="${giscus.repoId}"`,
+      `data-category="${giscus.category}"`,
+      `data-category-id="${giscus.categoryId}"`
+    ];
+
+    for (const slug of publishedSlugs) {
+      const articlePath = path.join(distDir, "blog", slug, "index.html");
+      if (!(await exists(articlePath))) continue;
+      const articleHtml = await fs.readFile(articlePath, "utf8");
+      for (const snippet of requiredGiscusSnippets) {
+        if (!articleHtml.includes(snippet)) {
+          errors.push(`article ${slug} missing Giscus snippet: ${snippet}`);
+        }
+      }
+    }
   }
 
   if (await exists(path.join(distDir, "friends", "index.html"))) {

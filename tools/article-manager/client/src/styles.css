@@ -316,12 +316,50 @@ button.danger {
 
 .status-list dd {
   margin: 0;
+  overflow-wrap: anywhere;
 }
 
 .button-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px;
+}
+
+.link-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.link-row.compact {
+  margin-top: 0;
+}
+
+.link-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 34px;
+  border: 1px solid #c9d3dd;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #172033;
+  font-size: 13px;
+  font-weight: 800;
+  padding: 7px 10px;
+  text-decoration: none;
+}
+
+.link-button:hover {
+  border-color: #12806f;
+  color: #0f766e;
+}
+
+.dark .link-button {
+  border-color: #344252;
+  background: #151d26;
+  color: #f7fafc;
 }
 
 .content-layout {
@@ -631,7 +669,7 @@ textarea {
 
 .status-strip {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
   gap: 10px;
   margin-top: 14px;
 }
@@ -654,6 +692,59 @@ textarea {
   gap: 12px;
   align-items: end;
   margin-top: 16px;
+}
+
+.hint {
+  margin: 10px 0 0;
+  color: #667789;
+  font-size: 13px;
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+}
+
+.dark .hint {
+  color: #b7c1cd;
+}
+
+.target-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.target-grid article {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  border: 1px solid #dfe6ee;
+  border-radius: 8px;
+  padding: 14px;
+}
+
+.dark .target-grid article {
+  border-color: #253241;
+}
+
+.target-grid span {
+  color: #667789;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.target-grid strong,
+.target-grid small {
+  overflow-wrap: anywhere;
+}
+
+.target-grid small {
+  color: #667789;
+  line-height: 1.5;
+}
+
+.dark .target-grid span,
+.dark .target-grid small {
+  color: #b7c1cd;
 }
 
 .check-grid {
@@ -745,6 +836,7 @@ textarea {
   .field-grid,
   .check-grid,
   .status-strip,
+  .target-grid,
   .setup-grid,
   .button-grid {
     grid-template-columns: 1fr;

@@ -10,6 +10,35 @@
     "profileUrl": "https://longwudf.github.io/shiyuboke/",
     "avatar": "https://longwudf.github.io/shiyuboke/favicon.svg"
   },
+  "deployment": {
+    "repository": "longwudf/shiyuboke",
+    "repositoryUrl": "https://github.com/longwudf/shiyuboke",
+    "remoteUrl": "https://github.com/longwudf/shiyuboke.git",
+    "sshRemoteUrl": "git@github.com:longwudf/shiyuboke.git",
+    "pagesUrl": "https://longwudf.github.io/shiyuboke/",
+    "homepageUrl": "https://longwudf.github.io/shiyuboke/",
+    "actionsUrl": "https://github.com/longwudf/shiyuboke/actions",
+    "latestSuccessfulRunUrl": "https://github.com/longwudf/shiyuboke/actions/runs/27163867016",
+    "defaultBranch": "main",
+    "pagesStatus": "deployed",
+    "discussionsEnabled": true
+  },
+  "comments": {
+    "provider": "giscus",
+    "enabled": true,
+    "giscus": {
+      "repo": "longwudf/shiyuboke",
+      "repoId": "R_kgDOShwURA",
+      "category": "Announcements",
+      "categoryId": "DIC_kwDOShwURM4C-xk0",
+      "mapping": "pathname",
+      "strict": "0",
+      "reactionsEnabled": "1",
+      "inputPosition": "top",
+      "theme": "preferred_color_scheme",
+      "lang": "zh-CN"
+    }
+  },
   "navigation": [
     {
       "href": "/",
