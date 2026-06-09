@@ -335,6 +335,14 @@ const normalizeRemote = (remote: string) =>
 const remoteMatchesShiyuBlog = (remote: string, context: { remoteUrl: string; sshRemoteUrl: string }) =>
   [context.remoteUrl, context.sshRemoteUrl].map(normalizeRemote).includes(normalizeRemote(remote));
 
+const parseAheadBehind = (value: string) => {
+  const [ahead = "0", behind = "0"] = value.trim().split(/\s+/);
+  return {
+    ahead: Number.parseInt(ahead, 10) || 0,
+    behind: Number.parseInt(behind, 10) || 0
+  };
+};
+
 const getGitStatus = async () => {
   const managerContext = await getManagerContext();
   const repo = await isGitRepo();
@@ -349,6 +357,10 @@ const getGitStatus = async () => {
       remoteMatches: false,
       changes: [],
       clean: true,
+      ahead: 0,
+      behind: 0,
+      upstream: "",
+      hasUpstream: false,
       needsSetup: true
     };
   }
@@ -360,10 +372,18 @@ const getGitStatus = async () => {
   ]);
   const changes = statusResult.stdout.split(/\r?\n/).filter(Boolean);
   const remote = remoteResult.ok ? remoteResult.stdout.trim() : "";
+  const branch = branchResult.ok ? branchResult.stdout.trim() : "";
+  const upstreamResult = await runCommandJson("git", ["rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}"]);
+  const upstream = upstreamResult.ok ? upstreamResult.stdout.trim() : "";
+  const comparisonRef = upstream || (branch ? `origin/${branch}` : "");
+  const syncResult = comparisonRef
+    ? await runCommandJson("git", ["rev-list", "--left-right", "--count", `HEAD...${comparisonRef}`])
+    : { ok: false, stdout: "" };
+  const sync = syncResult.ok ? parseAheadBehind(syncResult.stdout) : { ahead: 0, behind: 0 };
 
   return {
     isRepo: true,
-    branch: branchResult.ok ? branchResult.stdout.trim() : "",
+    branch,
     remote,
     hasRemote: Boolean(remote),
     expectedRemote: managerContext.remoteUrl,
@@ -371,6 +391,10 @@ const getGitStatus = async () => {
     remoteMatches: remoteMatchesShiyuBlog(remote, managerContext),
     changes,
     clean: changes.length === 0,
+    ahead: sync.ahead,
+    behind: sync.behind,
+    upstream,
+    hasUpstream: Boolean(upstream),
     needsSetup: !remote
   };
 };

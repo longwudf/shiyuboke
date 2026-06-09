@@ -191,6 +191,10 @@ type GitStatus = {
   remoteMatches: boolean;
   changes: string[];
   clean: boolean;
+  ahead: number;
+  behind: number;
+  upstream: string;
+  hasUpstream: boolean;
   needsSetup: boolean;
 };
 
@@ -480,6 +484,15 @@ function App() {
     const value = post.updatedDate || post.date;
     return !latest || value > latest ? value : latest;
   }, "");
+  const gitSyncLabel = gitStatus
+    ? gitStatus.ahead > 0 && gitStatus.behind > 0
+      ? `待推送 ${gitStatus.ahead} 个提交，落后远端 ${gitStatus.behind} 个提交`
+      : gitStatus.ahead > 0
+        ? `待推送 ${gitStatus.ahead} 个提交`
+        : gitStatus.behind > 0
+          ? `落后远端 ${gitStatus.behind} 个提交`
+          : "已同步远端"
+    : "同步状态未知";
 
   const filteredPosts = posts.filter((post) => {
     const haystack = [post.title, post.description, post.category, post.tags.join(" "), post.series ?? ""].join(" ").toLowerCase();
@@ -686,6 +699,7 @@ function App() {
               <div><dt>Remote</dt><dd>{gitStatus?.remote || "未设置"}</dd></div>
               <div><dt>目标仓库</dt><dd>{gitStatus?.remoteMatches ? "已指向诗余博客" : `应为 ${gitStatus?.expectedRemote ?? "诗余博客仓库"}`}</dd></div>
               <div><dt>工作区</dt><dd>{gitStatus?.clean ? "干净" : `${gitStatus?.changes.length ?? 0} 个变更`}</dd></div>
+              <div><dt>同步远端</dt><dd>{gitSyncLabel}</dd></div>
             </dl>
           </section>
           <section className="panel">
@@ -1228,6 +1242,7 @@ function App() {
             <span>{gitStatus?.remote || "未设置 remote"}</span>
             <span>{gitStatus?.remoteMatches ? "目标仓库正确" : "需要指向诗余博客"}</span>
             <span>{gitStatus?.clean ? "工作区干净" : `${gitStatus?.changes.length ?? 0} 个变更`}</span>
+            <span>{gitSyncLabel}</span>
           </div>
           {(!gitStatus?.isRepo || gitStatus.needsSetup) && (
             <div className="setup-grid">

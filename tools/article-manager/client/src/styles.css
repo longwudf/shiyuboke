@@ -31,15 +31,26 @@ button {
   align-items: center;
   justify-content: center;
   gap: 8px;
+  flex-wrap: wrap;
   min-height: 38px;
+  min-width: 0;
+  max-width: 100%;
   border: 1px solid #c9d3dd;
   border-radius: 8px;
   background: #ffffff;
   color: #172033;
   cursor: pointer;
   font-weight: 700;
+  line-height: 1.2;
   padding: 8px 12px;
+  text-align: center;
   transition: border-color 0.16s ease, background 0.16s ease, color 0.16s ease;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+button svg {
+  flex: 0 0 auto;
 }
 
 button:hover:not(:disabled) {
@@ -295,6 +306,20 @@ button.danger {
   justify-content: space-between;
   gap: 12px;
   flex-wrap: wrap;
+}
+
+.panel-head > div,
+.section-head > div,
+.list-head > div {
+  min-width: 0;
+}
+
+.button-row {
+  justify-content: flex-start;
+}
+
+.button-row button {
+  flex: 0 1 auto;
 }
 
 .status-list {
@@ -681,6 +706,12 @@ textarea {
   padding: 12px;
 }
 
+.status-strip span {
+  min-width: 0;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
 .dark .status-strip span,
 .dark .check-card {
   border-color: #253241;
@@ -756,7 +787,9 @@ textarea {
 
 .check-card {
   display: grid;
+  align-content: start;
   gap: 10px;
+  min-width: 0;
 }
 
 .check-card.pass {
@@ -781,6 +814,16 @@ textarea {
   display: flex;
   align-items: center;
   gap: 8px;
+  min-width: 0;
+}
+
+.check-card strong {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.check-card button {
+  justify-self: start;
 }
 
 .check-card pre {
@@ -848,5 +891,9 @@ textarea {
   .list-head {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .button-row button {
+    width: 100%;
   }
 }
