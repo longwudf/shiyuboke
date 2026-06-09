@@ -1,15 +1,17 @@
 ---
-title: "用 Astro 搭建静态技术博客"
-description: "从内容集合、布局组件到静态构建，梳理一个 Astro 博客的核心搭建路径。"
-date: 2026-05-20
-updatedDate: 2026-05-24
-tags: ["Astro", "静态站点", "Markdown"]
-category: "Astro"
-cover: "/images/astro-static-blog.svg"
-draft: false
+title: 用 Astro 搭建静态技术博客
+description: 从内容集合、布局组件到静态构建，梳理一个 Astro 博客的核心搭建路径。
+date: '2026-05-20'
+updatedDate: '2026-05-24'
+category: Astro
+tags:
+  - Astro
+  - 静态站点
+  - Markdown
+cover: /images/astro-static-blog.svg
+draft: true
 featured: true
 ---
-
 ## 为什么选择 Astro
 
 Astro 很适合技术博客这类内容优先的网站。页面默认输出为静态 HTML，交互脚本按需加载，既保留了组件化开发体验，也避免了把整站变成不必要的客户端应用。
